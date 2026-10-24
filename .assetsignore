@@ -1,4 +1,7 @@
 wrangler.jsonc
+worker.js
+node_modules
+.wrangler
 .assetsignore
 .gitignore
 .git

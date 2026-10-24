@@ -21,7 +21,6 @@
   body[data-dock="closed"] .wrap { padding-right: 58px; }
   @media (min-width: 1100px) { body[data-dock="open"] .wrap { padding-right: calc(var(--pw) + 76px); } }
   h1 { font-family: var(--disp); font-weight: 700; font-size: clamp(28px, 4.5vw, 40px); line-height: 1.05; margin: 0; }
-  .lede { color: var(--muted); max-width: 64ch; margin: 8px 0 0; }
   h2 { font-family: var(--disp); font-weight: 600; font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0; }
   h3.grp { font-family: var(--disp); font-weight: 600; font-size: 13px; margin: 14px 0 6px; color: var(--fg); }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -31,24 +30,47 @@
   button.btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   button.btn[aria-pressed="true"], button.btn.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 
-  .belt-head { display: flex; justify-content: space-between; align-items: center; margin: 26px 0 10px; gap: 10px; }
-  .belt { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: thin; }
-  .pw { position: relative; flex: 0 0 172px; scroll-snap-align: start; }
-  .pcard { all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 8px 10px 12px; border: 1px solid var(--line); background: var(--card); border-radius: 12px; transition: transform .15s ease, border-color .15s ease; }
+  .belt-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; gap: 10px; }
+  /* Belt card: a miniature of the three pieces on top, the eight base colors as a ribbon, then name and origin. */
+  .belt { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: thin; }
+  .pw { position: relative; flex: 0 0 248px; scroll-snap-align: start; }
+  .pcard { all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 10px 10px 12px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; transition: transform .15s ease, border-color .15s ease; }
   .pcard:hover { border-color: var(--muted); transform: translateY(-2px); }
   .pcard:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .pcard[aria-pressed="true"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
-  .pcard b { display: block; font-weight: 600; font-size: 13.5px; line-height: 1.25; margin-top: 2px; }
-  .pcard .tag { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-  .iso { position: relative; display: block; height: 128px; }
-  .iso i { position: absolute; left: 50%; bottom: 4px; width: 62px; height: 62px; margin-left: -31px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(127,127,127,.45); transform: translateY(calc(var(--i) * -8px)) scaleY(.58) rotate(45deg); }
-  .del { all: unset; box-sizing: border-box; position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 14px; line-height: 1; color: var(--muted); background: var(--card); border: 1px solid var(--line); }
+  .pcard b { display: block; font-weight: 600; font-size: 14px; line-height: 1.25; margin-top: 10px; padding-right: 34px; }
+  .pcard .tag { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; padding-right: 34px; }
+  .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  .th { container-type: inline-size; position: relative; aspect-ratio: 4 / 5; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(127,127,127,.22); font-family: var(--tight); }
+  .th > * { position: absolute; }
+  .th .tw { left: 34%; top: 24%; width: 58%; height: 38%; border-radius: 6cqw; }
+  .th .tw::before, .th .tw::after { content: ""; position: absolute; left: 12%; height: 5cqw; border-radius: 3cqw; }
+  .th .tw::before { top: 34%; width: 52%; background: var(--a); }
+  .th .tw::after { top: 58%; width: 70%; background: var(--t); opacity: .55; }
+  .th .tf { left: 11%; top: 43%; width: 14%; aspect-ratio: 1; border: 2.6cqw solid; border-radius: 50%; box-sizing: border-box; }
+  .th .tf::after { content: ""; position: absolute; left: 50%; top: 100%; width: 2.6cqw; height: 115%; margin-left: -1.3cqw; background: currentColor; }
+  .th .tg { left: 7%; right: 7%; top: 63%; height: 1.4cqw; opacity: .35; }
+  .th .tt { left: 0; right: 0; top: 70%; text-align: center; font-weight: 800; font-size: 12cqw; letter-spacing: -.03em; white-space: nowrap; }
+  .th .tt i { font-weight: 400; }
+  .th .tn { right: 9%; top: 13%; font-family: var(--disp); font-weight: 500; font-size: 30cqw; line-height: 1; }
+  .th .tl { left: 9%; height: 5cqw; border-radius: 3cqw; }
+  .ribbon { display: flex; height: 22px; margin-top: 8px; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(127,127,127,.25); }
+  .ribbon i { flex: 1; }
+  .ribbon i.w { flex: 1.6; }
+  .del { all: unset; box-sizing: border-box; position: absolute; right: 10px; bottom: 12px; min-width: 30px; height: 30px; padding: 0 7px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; font-size: 12px; font-weight: 600; line-height: 1; color: var(--muted); border: 1px solid var(--line); background: var(--card); }
+  .del svg { width: 15px; height: 15px; }
   .del:hover { color: var(--fg); border-color: var(--muted); }
+  .del.arm { background: #B3261E; border-color: #B3261E; color: #FFFFFF; }
   .del:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .empty { flex: 1 0 100%; border: 1.5px dashed var(--line); border-radius: 14px; padding: 28px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+  .empty b { display: block; color: var(--fg); font-size: 15px; margin-bottom: 4px; }
+  .lnkbtn { all: unset; cursor: pointer; font-size: 13px; color: var(--muted); text-decoration: underline; }
+  .lnkbtn:hover { color: var(--fg); }
+  .lnkbtn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
   .stage-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin: 14px 0 12px; }
   .stage-head .name { font-family: var(--disp); font-weight: 600; font-size: 20px; }
-  .stage { --e-p1bg: #2D2D3E; --e-p1text: #F1EDE4; --e-p1muted: #ABABBC; --e-p1window: #1F1F2C; --e-p1accent: #9DBFA6;
+  .stage { --e-o1bg: #ECE4DB; --e-o1ink: #2D2E29; --e-o1emph: #DC7145; --e-o1win: #3B383B; --e-o1wintext: #EEEBEE; --e-o1winmuted: #6D6D6F; --e-o1accent: #DC7145;
     --e-p2bg: #F1EDE4; --e-p2number: #3F6B50; --e-p2title: #1F1F2C; --e-p2body: #666674;
     --e-p3bg: #8E8EA6; --e-p3title: #1F1F2C; --e-p3body: #1F1F2C; --e-p3emph: #24493A;
     background: var(--feed); border-radius: 16px; padding: clamp(12px, 2.2vw, 28px); display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(12px, 2vw, 26px); border: 1px solid var(--line); }
@@ -63,32 +85,51 @@
   .foot { display: flex; justify-content: space-between; font-size: 2.45cqw; font-weight: 600; padding-top: 2.2cqw; border-top: .25cqw solid color-mix(in srgb, currentColor 22%, transparent); }
   .foot span:last-child { font-weight: 500; opacity: .8; }
 
-  .a { background: var(--e-p1bg); color: var(--e-p1text); }
-  .a .kick .mut { color: var(--e-p1muted); }
-  .scene { display: flex; align-items: flex-end; justify-content: space-between; gap: 3cqw; }
-  .fig { width: 19cqw; flex: none; }
-  .fig * { stroke: var(--e-p1text); }
-  .fig .eye { fill: var(--e-p1text); stroke: none; }
-  .win { width: 62cqw; flex: none; background: var(--e-p1window); border: .25cqw solid color-mix(in srgb, var(--e-p1text) 24%, transparent); border-radius: 1.4cqw; padding: 2.4cqw 3cqw 1.6cqw; }
-  .win .bar3 { display: flex; align-items: center; gap: 1.1cqw; padding-bottom: 1.8cqw; border-bottom: .25cqw solid color-mix(in srgb, var(--e-p1text) 20%, transparent); font-size: 2.3cqw; color: var(--e-p1muted); }
-  .win .bar3 i { width: 1.5cqw; height: 1.5cqw; border-radius: 50%; background: var(--e-p1muted); }
-  .win .bar3 em { margin: 0 auto; font-style: normal; font-weight: 600; }
-  .win ul { list-style: none; margin: 2.2cqw 0 0; padding: 0; display: grid; gap: 0; }
-  .win li { display: flex; align-items: center; gap: 2cqw; font-size: 2.55cqw; font-weight: 600; padding: 1.5cqw 0; border-bottom: .2cqw solid color-mix(in srgb, var(--e-p1text) 14%, transparent); }
+  /* Piece 1 mirrors the original 1600×2000 card: every position is its pixel value / 16, in cqw of the piece. */
+  .a { display: block; padding: 0; background: var(--e-o1bg); color: var(--e-o1ink); }
+  .a > * { position: absolute; }
+  .a .kick { left: 7.4cqw; right: 7.5cqw; top: 9.2cqw; font-family: var(--ui); font-weight: 700; font-size: 2.55cqw; letter-spacing: .205em; line-height: 1; }
+  .a .kick .sl { font-family: var(--tight); font-weight: 800; font-style: italic; font-size: 3.3cqw; letter-spacing: 0; margin-right: 2.4cqw; }
+  .a .kick .dot { width: 1.15cqw; height: 1.15cqw; margin: 0 1.6cqw .25cqw 0; opacity: 1; vertical-align: middle; }
+  .a .zz { left: 81.75cqw; top: 19.8cqw; width: 10.8cqw; height: 9.8cqw; color: var(--e-o1emph); font-family: var(--tight); font-weight: 800; line-height: .74; }
+  .a .zz b { position: absolute; }
+  .a .zz b:nth-child(1) { left: .1cqw; top: 7.6cqw; font-size: 2.95cqw; }
+  .a .zz b:nth-child(2) { left: 3.3cqw; top: 4.85cqw; font-size: 3.85cqw; }
+  .a .zz b:nth-child(3) { left: 6.6cqw; top: .25cqw; font-size: 7.1cqw; }
+  .fig { left: 10.3cqw; top: 48.8cqw; width: 14.4cqw; overflow: visible; }
+  .fig * { stroke: var(--e-o1ink); }
+  .fig .eye { fill: var(--e-o1ink); stroke: none; }
+  .win { left: 34.25cqw; top: 30.9cqw; width: 58.1cqw; height: 47.9cqw; background: var(--e-o1win); color: var(--e-o1wintext); border-radius: 1.6cqw; box-shadow: 0 0 0 .2cqw color-mix(in srgb, var(--e-o1win) 70%, var(--e-o1bg)), 0 .35cqw .9cqw color-mix(in srgb, var(--e-o1ink) 28%, transparent); }
+  .win > * { position: absolute; }
+  .win .dots { left: 2.05cqw; top: 1.92cqw; display: flex; gap: .95cqw; }
+  .win .dots i { width: 1.3cqw; height: 1.3cqw; border-radius: 50%; background: var(--e-o1wintext); }
+  .win .ttl { left: 0; right: 0; top: 1.55cqw; text-align: center; font-family: var(--ui); font-weight: 600; font-size: 1.95cqw; letter-spacing: .1em; line-height: 1; }
+  .win .hr { left: 0; right: 0; top: 5.05cqw; height: .19cqw; background: var(--e-o1wintext); }
+  .win .face { left: 47cqw; top: 9.2cqw; width: 7.5cqw; height: 4cqw; }
+  .win .face i { position: absolute; top: 0; width: 1.7cqw; height: .32cqw; border-radius: .2cqw; background: var(--e-o1wintext); }
+  .win .face i:nth-child(2) { left: 5.4cqw; }
+  .win .face b { position: absolute; left: 2.95cqw; top: 2.55cqw; width: 1.3cqw; height: 1.3cqw; border-radius: 50%; background: var(--e-o1wintext); box-shadow: inset 0 0 0 .38cqw var(--e-o1wintext); }
+  .win .face b::after { content: ""; position: absolute; left: .45cqw; top: .5cqw; width: .4cqw; height: .3cqw; border-radius: 50%; background: var(--e-o1win); }
+  .win ul { left: 2.4cqw; right: 2.4cqw; top: 15.2cqw; list-style: none; margin: 0; padding: 0; }
+  .win li { display: flex; align-items: center; height: 5.375cqw; font-family: var(--tight); font-size: 2.4cqw; font-weight: 500; letter-spacing: -.005em; border-bottom: .19cqw solid color-mix(in srgb, var(--e-o1wintext) 82%, transparent); }
   .win li:last-child { border-bottom: 0; }
-  .win li s { flex: none; width: 3cqw; height: 3cqw; border-radius: 50%; position: relative; }
-  .win li.done { color: color-mix(in srgb, var(--e-p1text) 80%, transparent); }
-  .win li.done s { background: var(--e-p1muted); }
-  .win li.done s::after { content: ""; position: absolute; left: 31%; top: 25%; width: 1.2cqw; height: .65cqw; border-left: .35cqw solid var(--e-p1window); border-bottom: .35cqw solid var(--e-p1window); transform: rotate(-45deg); }
-  .win li.run { color: var(--e-p1text); }
-  .win li.run s { border: .35cqw solid var(--e-p1accent); }
-  .win li.run s::after { content: ""; position: absolute; inset: .55cqw; border-radius: 50%; background: var(--e-p1accent); }
-  .win li.pend { color: color-mix(in srgb, var(--e-p1muted) 70%, transparent); }
-  .win li.pend s { border: .3cqw solid color-mix(in srgb, var(--e-p1muted) 70%, transparent); }
-  .track { margin-left: auto; width: 17cqw; height: .9cqw; background: color-mix(in srgb, var(--e-p1text) 16%, transparent); border-radius: 1cqw; overflow: hidden; }
-  .track span { display: block; width: 55%; height: 100%; background: var(--e-p1accent); }
-  .phrase { font-weight: 800; font-size: 11.2cqw; letter-spacing: -.025em; line-height: 1; }
-  .phrase i { font-weight: 400; color: var(--e-p1accent); }
+  .win li s { flex: none; position: relative; width: 2.5cqw; height: 2.5cqw; margin-right: 1.65cqw; border-radius: 50%; box-sizing: border-box; }
+  .win li.done { color: color-mix(in srgb, var(--e-o1wintext) 90%, var(--e-o1win)); }
+  .win li.done s { background: var(--e-o1accent); }
+  .win li.done s::after { content: ""; position: absolute; left: .68cqw; top: .66cqw; width: 1.05cqw; height: .55cqw; border-left: .3cqw solid var(--e-o1wintext); border-bottom: .3cqw solid var(--e-o1wintext); transform: rotate(-45deg); }
+  .win li.run { font-weight: 700; color: var(--e-o1wintext); }
+  .win li.run s { border: .25cqw solid var(--e-o1accent); }
+  .win li.run s::after { content: ""; position: absolute; inset: .28cqw; border-radius: 50%; background: var(--e-o1accent); }
+  .win li.pend { color: var(--e-o1winmuted); }
+  .win li.pend s { border: .25cqw solid var(--e-o1wintext); }
+  .track { margin-left: auto; width: 16.1cqw; height: .65cqw; background: color-mix(in srgb, var(--e-o1accent) 18%, var(--e-o1win)); }
+  .track span { display: block; width: 55%; height: 100%; background: var(--e-o1accent); }
+  .a .ground { left: 7.4cqw; right: 7.4cqw; top: 79.75cqw; height: .14cqw; background: color-mix(in srgb, var(--e-o1ink) 42%, var(--e-o1bg)); }
+  .phrase { left: 0; right: 0; top: 88.2cqw; text-align: center; font-family: var(--tight); font-weight: 800; font-size: 9.85cqw; letter-spacing: -.045em; line-height: 1; }
+  .phrase i { font-weight: 400; letter-spacing: -.035em; color: var(--e-o1emph); }
+  .a .hr2 { left: 7.4cqw; right: 7.4cqw; top: 109.4cqw; height: .1cqw; background: color-mix(in srgb, var(--e-o1ink) 30%, var(--e-o1bg)); }
+  .a .sig { left: 0; right: 0; top: 115cqw; text-align: center; font-family: var(--tight); font-size: 2.5cqw; line-height: 1.38; }
+  .a .sig b { display: block; font-weight: 700; }
 
   .b { background: var(--e-p2bg); color: var(--e-p2title); }
   .b .kick .mut { color: var(--e-p2body); }
@@ -153,12 +194,12 @@
 </style>
 
 <div class="wrap">
-  <h1>Paleta Wesley Tomé</h1>
-  <p class="lede">Escolha uma paleta na esteira. No painel à direita, mexa na paleta base e tudo acompanha, ou ajuste a cor de cada elemento individualmente. Salve o que gostar como um novo item.</p>
 
   <div class="belt-head">
-    <h2>Esteira de paletas</h2>
+    <h2 id="beltTitle">Esteira de paletas</h2>
     <div class="row">
+      <span class="status" id="sync" role="status" style="min-height:0"></span>
+      <button class="lnkbtn" type="button" id="unhide" hidden>Restaurar paletas excluídas</button>
       <button class="btn" type="button" id="prev" aria-label="Paletas anteriores">‹</button>
       <button class="btn" type="button" id="next" aria-label="Próximas paletas">›</button>
     </div>
@@ -174,27 +215,32 @@
   </div>
 
   <div class="stage" id="stage" data-feed="light">
-    <article class="piece a" aria-label="Peça 1, fundo escuro">
-      <div class="kick"><span><span class="sl">/</span>O efeito do observador</span><span class="mut"><span class="dot"></span>Parado</span></div>
-      <div class="scene">
-        <svg class="fig" viewBox="0 0 100 170" aria-hidden="true" fill="none" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="50" cy="34" r="24"/>
-          <ellipse class="eye" cx="42" cy="34" rx="3.4" ry="6"/><ellipse class="eye" cx="58" cy="34" rx="3.4" ry="6"/>
-          <path d="M50 58V106M50 72L30 100M50 72L70 100M50 106L38 160M50 106L62 160M30 160H45M55 160H70"/>
-        </svg>
-        <div class="win">
-          <div class="bar3"><i></i><i></i><i></i><em>claude</em></div>
-          <ul>
-            <li class="done"><s></s>Ler os arquivos</li>
-            <li class="done"><s></s>Editar componentes</li>
-            <li class="run"><s></s>Validar lint<span class="track"><span></span></span></li>
-            <li class="pend"><s></s>Rodar os testes</li>
-            <li class="pend"><s></s>Abrir PR</li>
-          </ul>
-        </div>
+    <article class="piece a" aria-label="Peça 1, o efeito do observador">
+      <div class="kick"><span><span class="sl">/</span>O efeito do observador</span><span><span class="dot"></span>Parado</span></div>
+      <div class="zz" aria-hidden="true"><b>z</b><b>Z</b><b>Z</b></div>
+      <div class="win">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="ttl">claude</div>
+        <div class="hr"></div>
+        <div class="face" aria-hidden="true"><i></i><i></i><b></b></div>
+        <ul>
+          <li class="done"><s></s>Ler os arquivos</li>
+          <li class="done"><s></s>Editar componentes</li>
+          <li class="run"><s></s>Validar lint<span class="track"><span></span></span></li>
+          <li class="pend"><s></s>Rodar os testes</li>
+          <li class="pend"><s></s>Atualizar documentação</li>
+          <li class="pend"><s></s>Abrir PR</li>
+        </ul>
       </div>
+      <svg class="fig" viewBox="165 770 230 495" aria-hidden="true" fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="280" cy="885" r="100"/>
+        <ellipse class="eye" cx="211" cy="883" rx="15" ry="31" transform="rotate(-8 211 883)"/><ellipse class="eye" cx="276" cy="876" rx="15" ry="30" transform="rotate(-5 276 876)"/>
+        <path d="M269 986V1252M324 982L325 1252M269 1112H325M269 990L240 1138M324 986L356 1138M243 1252H269M325 1252H358"/>
+      </svg>
+      <div class="ground"></div>
       <h3 class="phrase">Olhou, <i>andou.</i></h3>
-      <div class="foot"><span>Wesley Tomé</span><span>wesleytome.com</span></div>
+      <div class="hr2"></div>
+      <div class="sig"><b>Wesley Tomé</b>wesleytome.com</div>
     </article>
 
     <article class="piece b" aria-label="Peça 2, fundo claro">
@@ -249,6 +295,7 @@
     <section class="save">
       <h2>Salvar na esteira</h2>
       <input type="text" id="sname" maxlength="40" placeholder="Nome da paleta" aria-label="Nome da paleta">
+      <input type="text" id="sby" maxlength="30" placeholder="Seu nome (aparece na esteira)" aria-label="Seu nome" hidden>
       <div class="row">
         <button class="btn solid" type="button" id="save">Salvar como nova</button>
         <button class="btn" type="button" id="update" hidden>Atualizar esta</button>
@@ -263,19 +310,24 @@
 <script>
 (function () {
   var BASE = [
-    ['dark', 'Escuro', 'fundo da peça 1'], ['deep', 'Profundo', 'janela e texto no claro'], ['light', 'Claro', 'fundo da peça 2 e texto no escuro'],
-    ['mid', 'Intermediário', 'fundo da peça 3'], ['neutralLight', 'Neutro claro', 'texto secundário no escuro'], ['neutralDark', 'Neutro escuro', 'texto secundário no claro'],
-    ['accent', 'Acento', 'destaque no escuro'], ['accentDark', 'Acento escuro', 'destaque no claro']
+    ['dark', 'Escuro', 'janela da peça 1'], ['deep', 'Profundo', 'texto e boneco no claro'], ['light', 'Claro', 'fundo das peças 1 e 2, texto na janela'],
+    ['mid', 'Intermediário', 'fundo da peça 3'], ['neutralLight', 'Neutro claro', 'itens pendentes na janela'], ['neutralDark', 'Neutro escuro', 'texto secundário no claro'],
+    ['accent', 'Acento', 'destaque na janela'], ['accentDark', 'Acento escuro', 'destaque no claro']
   ];
-  var STACK = ['dark', 'mid', 'light', 'deep', 'neutralDark', 'neutralLight', 'accentDark', 'accent'];
+  var RIBBON = ['deep', 'dark', 'neutralDark', 'mid', 'neutralLight', 'light', 'accentDark', 'accent'], WIDE = { dark: 1, mid: 1, light: 1 };
   var ELEMS = [
-    { g: 'Peça 1 · fundo escuro', items: [['p1bg', 'Fundo', 'dark'], ['p1text', 'Texto principal', 'light'], ['p1muted', 'Texto secundário', 'neutralLight'], ['p1window', 'Janela', 'deep'], ['p1accent', 'Acento', 'accent']] },
+    { g: 'Peça 1 · o efeito do observador', items: [['o1bg', 'Fundo', 'light'], ['o1ink', 'Texto e boneco', 'deep'], ['o1emph', 'Destaque (andou., zzz)', 'accentDark'], ['o1win', 'Janela', 'dark'], ['o1wintext', 'Texto na janela', 'light'], ['o1winmuted', 'Itens pendentes', 'neutralLight'], ['o1accent', 'Acento na janela', 'accent']] },
     { g: 'Peça 2 · fundo claro', items: [['p2bg', 'Fundo', 'light'], ['p2number', 'Número', 'accentDark'], ['p2title', 'Título', 'deep'], ['p2body', 'Corpo', 'neutralDark']] },
     { g: 'Peça 3 · fundo intermediário', items: [['p3bg', 'Fundo', 'mid'], ['p3title', 'Título', 'deep'], ['p3body', 'Segunda linha', 'deep'], ['p3emph', 'Palavra de ênfase', 'deep']] }
   ];
   var DEF = {}; ELEMS.forEach(function (g) { g.items.forEach(function (it) { DEF[it[0]] = it[2]; }); });
-  function P(id, name, tag, c, emph) { return { id: id, name: name, tag: tag, c: { dark: c[0], mid: c[1], light: c[2], deep: c[3], neutralLight: c[4], neutralDark: c[5], accent: c[6], accentDark: c[7] }, o: { p3emph: emph } }; }
-  var PRESETS = [
+  function P(id, name, tag, c, emph, o) { return { id: id, name: name, tag: tag, c: { dark: c[0], mid: c[1], light: c[2], deep: c[3], neutralLight: c[4], neutralDark: c[5], accent: c[6], accentDark: c[7] }, o: Object.assign({ p3emph: emph }, o || {}) }; }
+  var ORIGINAL = P('original', 'Papel + laranja', 'Card original', ['#3B383B', '#BDB2A6', '#ECE4DB', '#2D2E29', '#6D6D6F', '#6A625A', '#DC7145', '#A84E25'], '#6E2F12', { o1emph: '#DC7145', o1wintext: '#EEEBEE' });
+  /* Shared mode (the deployed site): the belt lives on the server and starts empty. Local mode (localhost or file): presets + this browser's saves. */
+  var SHARED = (/^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) || /[?&]compartilhado\b/.test(location.search);
+  var API = '/api/palettes';
+  var PRESETS = SHARED ? [] : [
+    ORIGINAL,
     P('indigo', 'Índigo + sálvia', 'Recomendada', ['#2D2D3E', '#8E8EA6', '#F1EDE4', '#1F1F2C', '#ABABBC', '#666674', '#9DBFA6', '#3F6B50'], '#24493A'),
     P('ocean', 'Deep Ocean + argila', 'Da referência', ['#2C365A', '#C4BCB0', '#EEE8DF', '#1D2542', '#C4BCB0', '#675F56', '#D49A7A', '#94512F'], '#94512F'),
     P('carvao', 'Verde-carvão + sálvia', 'Distinta', ['#1E2A25', '#8FA096', '#EFEAE0', '#141E1A', '#A8ADA5', '#656861', '#9DBFA6', '#3F6B50'], '#1F4D36'),
@@ -286,9 +338,16 @@
   ];
   var $ = function (id) { return document.getElementById(id); };
   var stage = $('stage'), belt = $('belt'), contrastEl = $('contrast'), statusEl = $('status'), outEl = $('out'), dock = $('dock'), tab = $('tab'), snameEl = $('sname');
-  var saved = [], cur = PRESETS[0], colors = Object.assign({}, cur.c), ov = {}, derived = {}, baseIn = {}, elemIn = {};
+  var saved = [], hidden = [], loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, derived = {}, baseIn = {}, elemIn = {};
 
-  function all() { return PRESETS.concat(saved); }
+  function all() { return PRESETS.filter(function (p) { return hidden.indexOf(p.id) < 0; }).concat(saved); }
+  function fallback() { return all()[0] || ORIGINAL; }
+  function api(method, path, body) {
+    return fetch(API + (path ? '/' + encodeURIComponent(path) : ''), { method: method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  function fromServer(p) { return { id: p.id, name: p.name, by: p.by, tag: p.by ? 'por ' + p.by : 'Salva', saved: true, c: Object.assign({}, ORIGINAL.c, p.c), o: p.o || {}, at: p.at }; }
+  function setSync(t) { $('sync').textContent = t; }
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function isCustom() { return Object.keys(ov).length > 0 || BASE.some(function (b) { return colors[b[0]] !== cur.c[b[0]]; }); }
@@ -310,28 +369,60 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  function isoHTML(c) { return '<span class="iso" aria-hidden="true">' + STACK.map(function (k, i) { return '<i style="--i:' + i + ';background:' + c[k] + '"></i>'; }).join('') + '</span>'; }
+  function pick(p, k) { return (p.o && p.o[k]) || p.c[DEF[k]]; }
+  function cardHTML(p) {
+    var e = function (k) { return pick(p, k); };
+    var t1 = '<span class="th" style="background:' + e('o1bg') + ';color:' + e('o1ink') + '">' +
+      '<span class="tw" style="background:' + e('o1win') + ';--a:' + e('o1accent') + ';--t:' + e('o1wintext') + '"></span>' +
+      '<span class="tf"></span><span class="tg" style="background:' + e('o1ink') + '"></span>' +
+      '<span class="tt">Olhou, <i style="color:' + e('o1emph') + '">andou.</i></span></span>';
+    var t2 = '<span class="th" style="background:' + e('p2bg') + '">' +
+      '<span class="tn" style="color:' + e('p2number') + '">38h</span>' +
+      '<span class="tl" style="top:64%;width:76%;background:' + e('p2title') + '"></span><span class="tl" style="top:72%;width:60%;background:' + e('p2title') + '"></span>' +
+      '<span class="tl" style="top:82%;width:46%;height:3cqw;background:' + e('p2body') + '"></span></span>';
+    var t3 = '<span class="th" style="background:' + e('p3bg') + '">' +
+      '<span class="tl" style="top:30%;width:80%;height:7cqw;background:' + e('p3title') + '"></span><span class="tl" style="top:42%;width:62%;height:7cqw;background:' + e('p3title') + '"></span>' +
+      '<span class="tl" style="top:58%;width:74%;background:' + e('p3body') + ';opacity:.7"></span><span class="tl" style="top:66%;width:34%;background:' + e('p3emph') + '"></span></span>';
+    var rib = '<span class="ribbon">' + RIBBON.map(function (k) {
+      var lab = BASE.filter(function (b) { return b[0] === k; })[0][1];
+      return '<i' + (WIDE[k] ? ' class="w"' : '') + ' style="background:' + p.c[k] + '" title="' + lab + ' ' + p.c[k] + '"></i>';
+    }).join('') + '</span>';
+    return '<span class="thumbs" aria-hidden="true">' + t1 + t2 + t3 + '</span>' + rib + '<b>' + esc(p.name) + '</b><span class="tag">' + esc(p.tag) + '</span>';
+  }
+  var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
   function renderBelt() {
     belt.innerHTML = '';
-    all().forEach(function (p) {
+    var list = all();
+    if (!list.length) {
+      belt.innerHTML = SHARED && !loaded ? '<div class="empty" role="listitem">Carregando paletas…</div>' : '<div class="empty" role="listitem"><b>Nenhuma paleta na esteira ainda.</b>Ajuste as cores no painel e use "Salvar na esteira". Quem abrir este link vê as mesmas paletas.</div>';
+    }
+    list.forEach(function (p) {
       var w = document.createElement('div'); w.className = 'pw'; w.setAttribute('role', 'listitem');
       var b = document.createElement('button'); b.type = 'button'; b.className = 'pcard'; b.dataset.id = p.id; b.setAttribute('aria-pressed', p.id === cur.id ? 'true' : 'false');
-      b.innerHTML = isoHTML(p.c) + '<b>' + esc(p.name) + '</b><span class="tag">' + esc(p.tag) + '</span>';
+      b.innerHTML = cardHTML(p);
       b.addEventListener('click', function () { choose(p); });
       w.appendChild(b);
-      if (p.saved) {
-        var d = document.createElement('button'); d.type = 'button'; d.className = 'del'; d.textContent = '×'; d.setAttribute('aria-label', 'Excluir ' + p.name);
-        d.addEventListener('click', function () { removeSaved(p.id); });
-        w.appendChild(d);
-      }
+      var d = document.createElement('button'); d.type = 'button'; d.className = 'del'; d.innerHTML = TRASH; d.setAttribute('aria-label', 'Excluir ' + p.name); d.title = 'Excluir';
+      var timer;
+      // Two clicks: the first arms the button, the second deletes.
+      d.addEventListener('click', function () {
+        if (!d.classList.contains('arm')) {
+          d.classList.add('arm'); d.textContent = 'Excluir?'; d.setAttribute('aria-label', 'Confirmar exclusão de ' + p.name);
+          timer = setTimeout(function () { d.classList.remove('arm'); d.innerHTML = TRASH; d.setAttribute('aria-label', 'Excluir ' + p.name); }, 3000);
+          return;
+        }
+        clearTimeout(timer); removePalette(p);
+      });
+      w.appendChild(d);
       belt.appendChild(w);
     });
+    $('unhide').hidden = !hidden.length;
   }
   var crow = [];
   function renderContrast() {
     var R = resolve;
     crow = [
-      ['Peça 1'], ['Título', 'p1text', 'p1bg', 0], ['Secundário', 'p1muted', 'p1bg', 0], ['Acento', 'p1accent', 'p1bg', 1], ['Texto na janela', 'p1text', 'p1window', 0],
+      ['Peça 1'], ['Título e assinatura', 'o1ink', 'o1bg', 0], ['Destaque', 'o1emph', 'o1bg', 1], ['Texto na janela', 'o1wintext', 'o1win', 0], ['Itens pendentes', 'o1winmuted', 'o1win', 0], ['Acento na janela', 'o1accent', 'o1win', 1],
       ['Peça 2'], ['Número', 'p2number', 'p2bg', 1], ['Título', 'p2title', 'p2bg', 1], ['Corpo', 'p2body', 'p2bg', 0],
       ['Peça 3'], ['Título', 'p3title', 'p3bg', 1], ['Segunda linha', 'p3body', 'p3bg', 1], ['Palavra de ênfase', 'p3emph', 'p3bg', 1]
     ];
@@ -367,21 +458,44 @@
   function choose(p) { cur = p; colors = Object.assign({}, p.c); ov = {}; derived = {}; statusEl.textContent = ''; outEl.hidden = true; apply(); }
   function merged() { return Object.assign({}, cur.o || {}, ov); }
   function saveNew() {
-    var n = snameEl.value.trim() || ('Paleta ' + (saved.length + 1));
+    var n = snameEl.value.trim() || ('Paleta ' + (saved.length + 1)), by = $('sby').value.trim();
     var p = { id: 's' + Date.now(), name: n, tag: 'Salva', saved: true, c: Object.assign({}, colors), o: merged() };
-    saved.push(p); store('wt-saved2', saved); cur = p; ov = {}; derived = {}; snameEl.value = '';
-    renderBelt(); apply(); statusEl.textContent = 'Salva na esteira como "' + n + '".';
-    belt.scrollTo({ left: belt.scrollWidth, behavior: 'smooth' });
+    function done(q) {
+      saved.push(q); cur = q; ov = {}; derived = {}; snameEl.value = '';
+      renderBelt(); apply(); statusEl.textContent = 'Salva na esteira como "' + n + '".';
+      belt.scrollTo({ left: belt.scrollWidth, behavior: 'smooth' });
+    }
+    if (!SHARED) { done(p); store('wt-saved2', saved); return; }
+    store('wt-by', by); statusEl.textContent = 'Salvando…';
+    api('POST', '', { name: n, by: by, c: p.c, o: p.o }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
   }
   function updateCur() {
     if (!cur.saved) return;
-    cur.o = merged(); cur.c = Object.assign({}, colors); ov = {}; store('wt-saved2', saved);
-    renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.';
+    var c = Object.assign({}, colors), o = merged(), p = cur;
+    function done() { p.o = o; p.c = c; ov = {}; renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.'; }
+    if (!SHARED) { done(); store('wt-saved2', saved); return; }
+    statusEl.textContent = 'Salvando…';
+    api('PUT', p.id, { name: p.name, by: p.by, c: c, o: o }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
   }
-  function removeSaved(id) {
-    saved = saved.filter(function (p) { return p.id !== id; }); store('wt-saved2', saved);
-    if (cur.id === id) { cur = PRESETS[0]; colors = Object.assign({}, cur.c); ov = {}; }
-    renderBelt(); apply(); statusEl.textContent = 'Paleta excluída.';
+  function removePalette(p) {
+    function done() {
+      saved = saved.filter(function (x) { return x.id !== p.id; });
+      if (cur.id === p.id) { cur = fallback(); colors = Object.assign({}, cur.c); ov = {}; derived = {}; }
+      renderBelt(); apply(); statusEl.textContent = '"' + p.name + '" excluída.';
+    }
+    if (!p.saved) { hidden.push(p.id); store('wt-hidden', hidden); done(); return; }
+    if (!SHARED) { done(); store('wt-saved2', saved); return; }
+    api('DELETE', p.id).then(done, function () { statusEl.textContent = 'Não consegui excluir. Tente de novo.'; });
+  }
+  function refresh() {
+    if (!SHARED) return Promise.resolve();
+    setSync('Sincronizando…');
+    return api('GET').then(function (list) {
+      saved = list.map(fromServer); loaded = true; setSync('');
+      var c = saved.filter(function (p) { return p.id === cur.id; })[0];
+      if (c) cur = c;
+      renderBelt(); apply();
+    }, function () { loaded = true; setSync('Sem conexão com a esteira compartilhada.'); renderBelt(); });
   }
   function parseHex(t) { var v = t.value.trim(); if (v.charAt(0) !== '#') v = '#' + v; return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : null; }
 
@@ -584,7 +698,13 @@
   window.addEventListener('resize', placeDock);
   tab.addEventListener('click', function () { setOpen(dock.getAttribute('data-open') !== 'true'); });
 
-  var sv = load('wt-saved2'), oldSv = load('wt-saved');
+  $('unhide').addEventListener('click', function () { hidden = []; store('wt-hidden', hidden); renderBelt(); apply(); });
+  var sv = SHARED ? null : load('wt-saved2'), oldSv = SHARED ? null : load('wt-saved');
+  hidden = SHARED ? [] : (load('wt-hidden') || []);
+  if (SHARED) {
+    $('sby').hidden = false; $('sby').value = load('wt-by') || '';
+    $('beltTitle').textContent = 'Esteira compartilhada';
+  }
   if (Array.isArray(sv)) { saved = sv.filter(function (p) { return p && p.id && p.c; }); }
   else if (Array.isArray(oldSv)) {
     saved = oldSv.filter(function (p) { return p && p.id && p.c; }).map(function (p) {
@@ -594,13 +714,19 @@
     store('wt-saved2', saved);
   }
   var st = load('wt-state2'), open = true;
-  if (st) {
-    var f = all().filter(function (p) { return p.id === st.id; })[0];
+  function restore() {
+    if (!st) return;
+    var f = all().concat([ORIGINAL]).filter(function (p) { return p.id === st.id; })[0];
     if (!f && st.id === 'imp' && st.imp) { f = st.imp; derived = st.derived || {}; }
     if (f) { cur = f; colors = Object.assign({}, f.c, st.colors || {}); ov = st.ov || {}; }
-    if (st.open === false) open = false;
   }
+  if (st && st.open === false) open = false;
   if (window.innerWidth < 1100) open = false;
-  renderBelt(); apply(); setOpen(open);
+  restore(); renderBelt(); apply(); setOpen(open);
+  if (SHARED) {
+    refresh().then(function () { restore(); renderBelt(); apply(); });
+    setInterval(function () { if (!document.hidden) refresh(); }, 30000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
+  }
 })();
 </script>

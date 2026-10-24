@@ -1,7 +1,14 @@
 {
   "name": "wesleytome-temp",
+  "main": "worker.js",
   "compatibility_date": "2026-10-24",
   "assets": {
-    "directory": "."
-  }
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "PALETAS", "class_name": "Paletas" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Paletas"] }]
 }
