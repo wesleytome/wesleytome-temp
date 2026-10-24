@@ -32,7 +32,7 @@
 
   .belt-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; gap: 10px; }
   /* Belt card: a miniature of the three pieces on top, the eight base colors as a ribbon, then name and origin. */
-  .belt { position: relative; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: thin; }
+  .belt { position: relative; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding: 12px 10px 12px; scrollbar-width: thin; }
   .pw { position: relative; flex: 0 0 248px; scroll-snap-align: start; }
   .pcard { all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 10px 10px 12px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; transition: transform .15s ease, border-color .15s ease; }
   .pcard:hover { border-color: var(--muted); transform: translateY(-2px); }
@@ -57,6 +57,8 @@
   .ribbon { display: flex; height: 22px; margin-top: 8px; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(127,127,127,.25); }
   .ribbon i { flex: 1; }
   .ribbon i.w { flex: 1.6; }
+  /* Order badge: floats over the card's top-left corner and is renumbered whenever the belt order changes. */
+  .ord { position: absolute; top: -8px; left: -8px; z-index: 2; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box; border-radius: 13px; display: grid; place-items: center; background: var(--fg); color: var(--card); border: 2px solid var(--card); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
   .del { all: unset; box-sizing: border-box; position: absolute; right: 10px; bottom: 12px; min-width: 30px; height: 30px; padding: 0 7px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; font-size: 12px; font-weight: 600; line-height: 1; color: var(--muted); border: 1px solid var(--line); background: var(--card); }
   .del svg { width: 15px; height: 15px; }
   .del:hover { color: var(--fg); border-color: var(--muted); }
@@ -407,6 +409,7 @@
   }
   var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
   var GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
+  function numberBelt() { slots().forEach(function (x, i) { var o = x.querySelector('.ord'); if (o) o.textContent = i + 1; }); }
   function slots() { return Array.prototype.slice.call(belt.querySelectorAll('.pw')); }
   // The dragged card follows the pointer; neighbors slide (FLIP) as it crosses their midpoints.
   function startDrag(e, w) {
@@ -423,7 +426,7 @@
       for (var i = 0; i < others.length; i++) { if (center < others[i].offsetLeft + others[i].offsetWidth / 2) { target = others[i]; break; } }
       if (target !== w.nextElementSibling) {
         var first = others.map(function (x) { return x.getBoundingClientRect().left; });
-        belt.insertBefore(w, target);
+        belt.insertBefore(w, target); numberBelt();
         others.forEach(function (x, j) {
           var dx = first[j] - x.getBoundingClientRect().left; if (!dx) return;
           x.classList.remove('settle'); x.style.transform = 'translateX(' + dx + 'px)';
@@ -485,12 +488,14 @@
         var dir = e.key === 'ArrowLeft' ? -1 : (e.key === 'ArrowRight' ? 1 : 0); if (!dir) return;
         e.preventDefault();
         var sib = dir < 0 ? w.previousElementSibling : w.nextElementSibling; if (!sib) return;
-        belt.insertBefore(w, dir < 0 ? sib : sib.nextElementSibling); g.focus(); commitOrder();
+        belt.insertBefore(w, dir < 0 ? sib : sib.nextElementSibling); numberBelt(); g.focus(); commitOrder();
       });
       w.appendChild(g);
+      var n = document.createElement('span'); n.className = 'ord'; n.setAttribute('aria-hidden', 'true'); w.appendChild(n);
       w.dataset.id = p.id;
       belt.appendChild(w);
     });
+    numberBelt();
     $('unhide').hidden = !hidden.length;
   }
   var crow = [];
