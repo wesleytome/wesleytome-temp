@@ -32,14 +32,14 @@
 
   .belt-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 10px; gap: 10px; }
   /* Belt card: a miniature of the three pieces on top, the eight base colors as a ribbon, then name and origin. */
-  .belt { display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: thin; }
+  .belt { position: relative; display: flex; gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; padding: 4px 2px 12px; scrollbar-width: thin; }
   .pw { position: relative; flex: 0 0 248px; scroll-snap-align: start; }
   .pcard { all: unset; box-sizing: border-box; cursor: pointer; display: block; width: 100%; padding: 10px 10px 12px; border: 1px solid var(--line); background: var(--card); border-radius: 14px; transition: transform .15s ease, border-color .15s ease; }
   .pcard:hover { border-color: var(--muted); transform: translateY(-2px); }
   .pcard:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .pcard[aria-pressed="true"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
-  .pcard b { display: block; font-weight: 600; font-size: 14px; line-height: 1.25; margin-top: 10px; padding-right: 34px; }
-  .pcard .tag { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; padding-right: 34px; }
+  .pcard b { display: block; font-weight: 600; font-size: 14px; line-height: 1.25; margin-top: 10px; padding-right: 72px; }
+  .pcard .tag { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; padding-right: 72px; }
   .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
   .th { container-type: inline-size; position: relative; aspect-ratio: 4 / 5; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(127,127,127,.22); font-family: var(--tight); }
   .th > * { position: absolute; }
@@ -62,6 +62,16 @@
   .del:hover { color: var(--fg); border-color: var(--muted); }
   .del.arm { background: #B3261E; border-color: #B3261E; color: #FFFFFF; }
   .del:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  /* Reorder: drag the grip (mouse or touch), or focus it and use the arrow keys. */
+  .grip { all: unset; box-sizing: border-box; position: absolute; right: 46px; bottom: 12px; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; cursor: grab; touch-action: none; color: var(--muted); border: 1px solid var(--line); background: var(--card); }
+  .grip svg { width: 14px; height: 14px; }
+  .grip:hover { color: var(--fg); border-color: var(--muted); }
+  .grip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .belt.dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
+  .belt.dragging .grip { cursor: grabbing; }
+  .pw.drag { z-index: 3; }
+  .pw.drag .pcard { border-color: var(--fg); box-shadow: 0 16px 36px rgba(0,0,0,.2); transform: rotate(-1.2deg) scale(1.02); transition: none; }
+  .pw.settle { transition: transform .18s ease; }
   .empty { flex: 1 0 100%; border: 1.5px dashed var(--line); border-radius: 14px; padding: 28px 20px; text-align: center; color: var(--muted); font-size: 14px; }
   .empty b { display: block; color: var(--fg); font-size: 15px; margin-bottom: 4px; }
   .lnkbtn { all: unset; cursor: pointer; font-size: 13px; color: var(--muted); text-decoration: underline; }
@@ -340,7 +350,13 @@
   var stage = $('stage'), belt = $('belt'), contrastEl = $('contrast'), statusEl = $('status'), outEl = $('out'), dock = $('dock'), tab = $('tab'), snameEl = $('sname');
   var saved = [], hidden = [], loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, derived = {}, baseIn = {}, elemIn = {};
 
-  function all() { return PRESETS.filter(function (p) { return hidden.indexOf(p.id) < 0; }).concat(saved); }
+  var order = [], dragging = false;
+  function all() {
+    var list = PRESETS.filter(function (p) { return hidden.indexOf(p.id) < 0; }).concat(saved);
+    if (SHARED) return list; // the server already returns the shared order
+    var rank = function (p, i) { var r = order.indexOf(p.id); return r < 0 ? 1e6 + i : r; };
+    return list.map(function (p, i) { return { p: p, r: rank(p, i) }; }).sort(function (x, y) { return x.r - y.r; }).map(function (x) { return x.p; });
+  }
   function fallback() { return all()[0] || ORIGINAL; }
   function api(method, path, body) {
     return fetch(API + (path ? '/' + encodeURIComponent(path) : ''), { method: method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' })
@@ -390,6 +406,54 @@
     return '<span class="thumbs" aria-hidden="true">' + t1 + t2 + t3 + '</span>' + rib + '<b>' + esc(p.name) + '</b><span class="tag">' + esc(p.tag) + '</span>';
   }
   var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
+  var GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
+  function slots() { return Array.prototype.slice.call(belt.querySelectorAll('.pw')); }
+  // The dragged card follows the pointer; neighbors slide (FLIP) as it crosses their midpoints.
+  function startDrag(e, w) {
+    if (e.button > 0) return;
+    e.preventDefault();
+    var br = belt.getBoundingClientRect(), grab = e.clientX - w.getBoundingClientRect().left, lastX = e.clientX, raf = 0, before = slots().map(function (x) { return x.dataset.id; }).join();
+    dragging = true; // listeners live on window: moving the card in the DOM would drop pointer capture
+    belt.classList.add('dragging'); w.classList.add('drag');
+    function slotLeft() { return br.left + w.offsetLeft - belt.scrollLeft; }
+    function place() {
+      var others = slots().filter(function (x) { return x !== w; }), target = null;
+      // Midpoints come from layout (offsetLeft), not from rects that are mid-animation.
+      var center = lastX - grab + w.offsetWidth / 2 - br.left + belt.scrollLeft;
+      for (var i = 0; i < others.length; i++) { if (center < others[i].offsetLeft + others[i].offsetWidth / 2) { target = others[i]; break; } }
+      if (target !== w.nextElementSibling) {
+        var first = others.map(function (x) { return x.getBoundingClientRect().left; });
+        belt.insertBefore(w, target);
+        others.forEach(function (x, j) {
+          var dx = first[j] - x.getBoundingClientRect().left; if (!dx) return;
+          x.classList.remove('settle'); x.style.transform = 'translateX(' + dx + 'px)';
+          requestAnimationFrame(function () { x.classList.add('settle'); x.style.transform = ''; });
+        });
+      }
+      w.style.transform = 'translateX(' + (lastX - grab - slotLeft()) + 'px)';
+    }
+    function tick() {
+      var edge = 48;
+      if (lastX < br.left + edge) belt.scrollLeft -= 14; else if (lastX > br.right - edge) belt.scrollLeft += 14;
+      place(); raf = requestAnimationFrame(tick);
+    }
+    function move(ev) { lastX = ev.clientX; }
+    function end() {
+      cancelAnimationFrame(raf); dragging = false;
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', end); window.removeEventListener('pointercancel', end);
+      w.classList.remove('drag'); w.classList.add('settle'); w.style.transform = '';
+      setTimeout(function () { belt.classList.remove('dragging'); slots().forEach(function (x) { x.classList.remove('settle'); }); }, 200);
+      if (slots().map(function (x) { return x.dataset.id; }).join() !== before) commitOrder();
+    }
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+    tick();
+  }
+  function commitOrder() {
+    var ids = slots().map(function (x) { return x.dataset.id; });
+    if (!SHARED) { order = ids; store('wt-order', order); statusEl.textContent = 'Ordem salva.'; return; }
+    saved.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+    api('PUT', 'order', { ids: ids }).then(function () { statusEl.textContent = 'Ordem salva para todos.'; }, function () { statusEl.textContent = 'Não consegui salvar a ordem. Tente de novo.'; });
+  }
   function renderBelt() {
     belt.innerHTML = '';
     var list = all();
@@ -414,6 +478,17 @@
         clearTimeout(timer); removePalette(p);
       });
       w.appendChild(d);
+      var g = document.createElement('button'); g.type = 'button'; g.className = 'grip'; g.innerHTML = GRIP; g.title = 'Arraste para reordenar';
+      g.setAttribute('aria-label', 'Reordenar ' + p.name + ' (setas esquerda e direita)');
+      g.addEventListener('pointerdown', function (e) { startDrag(e, w); });
+      g.addEventListener('keydown', function (e) {
+        var dir = e.key === 'ArrowLeft' ? -1 : (e.key === 'ArrowRight' ? 1 : 0); if (!dir) return;
+        e.preventDefault();
+        var sib = dir < 0 ? w.previousElementSibling : w.nextElementSibling; if (!sib) return;
+        belt.insertBefore(w, dir < 0 ? sib : sib.nextElementSibling); g.focus(); commitOrder();
+      });
+      w.appendChild(g);
+      w.dataset.id = p.id;
       belt.appendChild(w);
     });
     $('unhide').hidden = !hidden.length;
@@ -488,7 +563,7 @@
     api('DELETE', p.id).then(done, function () { statusEl.textContent = 'Não consegui excluir. Tente de novo.'; });
   }
   function refresh() {
-    if (!SHARED) return Promise.resolve();
+    if (!SHARED || dragging) return Promise.resolve();
     setSync('Sincronizando…');
     return api('GET').then(function (list) {
       saved = list.map(fromServer); loaded = true; setSync('');
@@ -701,6 +776,7 @@
   $('unhide').addEventListener('click', function () { hidden = []; store('wt-hidden', hidden); renderBelt(); apply(); });
   var sv = SHARED ? null : load('wt-saved2'), oldSv = SHARED ? null : load('wt-saved');
   hidden = SHARED ? [] : (load('wt-hidden') || []);
+  order = SHARED ? [] : (load('wt-order') || []);
   if (SHARED) {
     $('sby').hidden = false; $('sby').value = load('wt-by') || '';
     $('beltTitle').textContent = 'Esteira compartilhada';

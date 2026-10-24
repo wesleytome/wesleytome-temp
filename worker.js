@@ -7,7 +7,12 @@ const MAX = 300;
 export class Paletas extends DurableObject {
   async list() {
     const m = await this.ctx.storage.list({ prefix: 'p:' });
-    return Array.from(m.values());
+    const order = (await this.ctx.storage.get('order')) || [];
+    const rank = (p) => { const i = order.indexOf(p.id); return i < 0 ? order.length : i; };
+    return Array.from(m.values()).sort((a, b) => rank(a) - rank(b));
+  }
+  async setOrder(ids) {
+    await this.ctx.storage.put('order', ids);
   }
   async put(p) {
     const n = (await this.ctx.storage.list({ prefix: 'p:' })).size;
@@ -50,6 +55,14 @@ export default {
     if (!url.pathname.startsWith('/api/palettes')) return env.ASSETS.fetch(request);
 
     const store = env.PALETAS.get(env.PALETAS.idFromName('esteira'));
+    if (url.pathname === '/api/palettes/order') {
+      if (request.method !== 'PUT') return json({ error: 'método' }, 405);
+      let body;
+      try { body = await request.json(); } catch { return json({ error: 'json' }, 400); }
+      const ids = (Array.isArray(body && body.ids) ? body.ids : []).filter((x) => typeof x === 'string' && /^[a-z0-9]{4,32}$/.test(x)).slice(0, MAX);
+      await store.setOrder(ids);
+      return json({ ok: true });
+    }
     const id = decodeURIComponent(url.pathname.slice('/api/palettes'.length).replace(/^\//, ''));
     if (id && !/^[a-z0-9]{4,32}$/.test(id)) return json({ error: 'id' }, 400);
 
