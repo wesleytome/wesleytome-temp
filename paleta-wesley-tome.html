@@ -88,6 +88,13 @@
     background: var(--feed); border-radius: 16px; padding: clamp(12px, 2.2vw, 28px); display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(12px, 2vw, 26px); border: 1px solid var(--line); }
   .stage[data-feed="dark"] { --feed: #1B1F23; }
   .stage[data-feed="light"] { --feed: #F4F2EE; }
+  .preview-label { margin: 18px 0 8px; }
+  .preview-label[hidden], .stage[hidden] { display: none; }
+  .view-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px 16px; }
+  .control-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .control-group .caption { color: var(--muted); font-size: 12px; font-weight: 600; margin-right: 2px; }
+  .edit-mode { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .edit-mode .btn { padding: 5px 9px; }
 
   .piece { container-type: inline-size; aspect-ratio: 4 / 5; position: relative; overflow: hidden; border-radius: 14px; padding: 8% 7.5% 6.5%; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; font-family: var(--tight); }
   .piece h3, .piece p { margin: 0; }
@@ -220,12 +227,22 @@
 
   <div class="stage-head">
     <div class="name" id="pname">Índigo + sálvia</div>
-    <div class="row" role="group" aria-label="Fundo do feed">
-      <button class="btn" type="button" data-feed="light" aria-pressed="true">Feed claro</button>
-      <button class="btn" type="button" data-feed="dark" aria-pressed="false">Feed escuro</button>
+    <div class="view-controls">
+      <div class="control-group" role="group" aria-label="Aplicação das peças">
+        <span class="caption">Peças</span>
+        <button class="btn" type="button" data-view="light" aria-pressed="true">Claras</button>
+        <button class="btn" type="button" data-view="dark" aria-pressed="false">Escuras</button>
+        <button class="btn" type="button" data-view="compare" aria-pressed="false">Comparar</button>
+      </div>
+      <div class="control-group" role="group" aria-label="Fundo do feed">
+        <span class="caption">Fundo do feed</span>
+        <button class="btn" type="button" data-feed="light" aria-pressed="true">Claro</button>
+        <button class="btn" type="button" data-feed="dark" aria-pressed="false">Escuro</button>
+      </div>
     </div>
   </div>
 
+  <h2 class="preview-label" id="lightLabel" hidden>Aplicação clara</h2>
   <div class="stage" id="stage" data-feed="light">
     <article class="piece a" aria-label="Peça 1, o efeito do observador">
       <div class="kick"><span><span class="sl">/</span>O efeito do observador</span><span><span class="dot"></span>Parado</span></div>
@@ -271,6 +288,8 @@
       <div class="foot"><span>Wesley Tomé</span><span>wesleytome.com</span></div>
     </article>
   </div>
+  <h2 class="preview-label" id="darkLabel" hidden>Aplicação escura</h2>
+  <div class="stage" id="darkStage" data-feed="light" hidden></div>
 </div>
 
 <div class="dock" id="dock" data-open="true">
@@ -300,10 +319,16 @@
     </section>
     <section>
       <h2>Elementos</h2>
-      <p class="sub">Cada elemento segue a base. Escolha outra cor para soltá-lo, e use ↺ para voltar.</p>
+      <p class="sub">Cada elemento segue a base da aplicação escolhida. Escolha outra cor para soltá-lo, e use ↺ para voltar.</p>
+      <div class="edit-mode" id="editMode" role="group" aria-label="Aplicação em edição" hidden>
+        <span class="caption">Editando</span>
+        <button class="btn" type="button" data-edit="light" aria-pressed="true">Clara</button>
+        <button class="btn" type="button" data-edit="dark" aria-pressed="false">Escura</button>
+      </div>
+      <p class="sub" id="editHint"></p>
       <div id="elemTokens"></div>
     </section>
-    <section><h2 style="margin-bottom:6px">Contraste</h2><table id="contrast"></table></section>
+    <section><h2 id="contrastTitle" style="margin-bottom:6px">Contraste · aplicação clara</h2><table id="contrast"></table></section>
     <section class="save">
       <h2>Salvar na esteira</h2>
       <input type="text" id="sname" maxlength="40" placeholder="Nome da paleta" aria-label="Nome da paleta">
@@ -322,9 +347,9 @@
 <script>
 (function () {
   var BASE = [
-    ['dark', 'Escuro', 'janela da peça 1'], ['deep', 'Profundo', 'texto e boneco no claro'], ['light', 'Claro', 'fundo das peças 1 e 2, texto na janela'],
-    ['mid', 'Intermediário', 'fundo da peça 3'], ['neutralLight', 'Neutro claro', 'itens pendentes na janela'], ['neutralDark', 'Neutro escuro', 'texto secundário no claro'],
-    ['accent', 'Acento', 'destaque na janela'], ['accentDark', 'Acento escuro', 'destaque no claro']
+    ['dark', 'Escuro', 'fundo no escuro, janela no claro'], ['deep', 'Profundo', 'texto no claro, fundo da peça 2 escura'], ['light', 'Claro', 'fundo no claro, texto no escuro'],
+    ['mid', 'Intermediário', 'fundo da peça 3 clara'], ['neutralLight', 'Neutro claro', 'texto secundário no escuro'], ['neutralDark', 'Neutro escuro', 'texto secundário no claro'],
+    ['accent', 'Acento', 'destaque na janela e no escuro'], ['accentDark', 'Acento escuro', 'destaque no claro']
   ];
   var RIBBON = ['deep', 'dark', 'neutralDark', 'mid', 'neutralLight', 'light', 'accentDark', 'accent'], WIDE = { dark: 1, mid: 1, light: 1 };
   var ELEMS = [
@@ -333,6 +358,8 @@
     { g: 'Peça 3 · fundo intermediário', items: [['p3bg', 'Fundo', 'mid'], ['p3title', 'Título', 'deep'], ['p3body', 'Segunda linha', 'deep'], ['p3emph', 'Palavra de ênfase', 'deep']] }
   ];
   var DEF = {}; ELEMS.forEach(function (g) { g.items.forEach(function (it) { DEF[it[0]] = it[2]; }); });
+  // Dark pieces reuse the base palette; only their element roles and optional overrides differ.
+  var DARK_DEF = { o1bg:'dark', o1ink:'light', o1emph:'accent', o1win:'surface', o1wintext:'light', o1winmuted:'neutralLight', o1accent:'accent', p2bg:'deep', p2number:'accent', p2title:'light', p2body:'neutralLight', p3bg:'surface', p3title:'light', p3body:'neutralLight', p3emph:'accent' };
   function P(id, name, tag, c, emph, o) { return { id: id, name: name, tag: tag, c: { dark: c[0], mid: c[1], light: c[2], deep: c[3], neutralLight: c[4], neutralDark: c[5], accent: c[6], accentDark: c[7] }, o: Object.assign({ p3emph: emph }, o || {}) }; }
   var ORIGINAL = P('original', 'Papel + laranja', 'Card original', ['#3B383B', '#BDB2A6', '#ECE4DB', '#2D2E29', '#6D6D6F', '#6A625A', '#DC7145', '#A84E25'], '#6E2F12', { o1emph: '#DC7145', o1wintext: '#EEEBEE' });
   /* Shared mode (the deployed site): the belt lives on the server and starts empty. Local mode (localhost or file): presets + this browser's saves. */
@@ -349,8 +376,11 @@
     P('lima', 'Carvão + lima', 'Referência', ['#2C2C2C', '#A5A59F', '#F4F4F1', '#1B1B1B', '#C5C5C5', '#696965', '#D4EC61', '#5F6B16'], '#46500F')
   ];
   var $ = function (id) { return document.getElementById(id); };
-  var stage = $('stage'), belt = $('belt'), contrastEl = $('contrast'), statusEl = $('status'), outEl = $('out'), dock = $('dock'), tab = $('tab'), snameEl = $('sname');
-  var saved = [], hidden = [], loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, derived = {}, baseIn = {}, elemIn = {};
+  var stage = $('stage'), darkStage = $('darkStage'), belt = $('belt'), contrastEl = $('contrast'), statusEl = $('status'), outEl = $('out'), dock = $('dock'), tab = $('tab'), snameEl = $('sname');
+  darkStage.innerHTML = stage.innerHTML;
+  darkStage.querySelector('.b').setAttribute('aria-label', 'Peça 2, fundo escuro');
+  darkStage.querySelector('.c').setAttribute('aria-label', 'Peça 3, superfície escura');
+  var saved = [], hidden = [], loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, darkOv = {}, derived = {}, baseIn = {}, elemIn = {}, viewMode = 'light', editMode = 'light', feedMode = 'light';
 
   var order = [], dragging = false;
   function all() {
@@ -364,17 +394,22 @@
     return fetch(API + (path ? '/' + encodeURIComponent(path) : ''), { method: method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
-  function fromServer(p) { return { id: p.id, name: p.name, by: p.by, tag: p.by ? 'por ' + p.by : 'Salva', saved: true, c: Object.assign({}, ORIGINAL.c, p.c), o: p.o || {}, at: p.at }; }
+  function fromServer(p) { return { id: p.id, name: p.name, by: p.by, tag: p.by ? 'por ' + p.by : 'Salva', saved: true, c: Object.assign({}, ORIGINAL.c, p.c), o: p.o || {}, d: p.d || {}, at: p.at }; }
   function setSync(t) { $('sync').textContent = t; }
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
-  function isCustom() { return Object.keys(ov).length > 0 || BASE.some(function (b) { return colors[b[0]] !== cur.c[b[0]]; }); }
-  function persist() { store('wt-state2', { id: cur.id, colors: colors, ov: ov, derived: derived, imp: cur.id === 'imp' ? cur : null, open: dock.getAttribute('data-open') === 'true' }); }
+  function isCustom() { return Object.keys(ov).length > 0 || Object.keys(darkOv).length > 0 || BASE.some(function (b) { return colors[b[0]] !== cur.c[b[0]]; }); }
+  function persist() { store('wt-state2', { id: cur.id, colors: colors, ov: ov, darkOv: darkOv, derived: derived, imp: cur.id === 'imp' ? cur : null, open: dock.getAttribute('data-open') === 'true', view: viewMode, edit: editMode, feed: feedMode }); }
   function migrate(c) {
     if (!c || c.base === undefined) return c;
     return { dark: c.base, mid: c.mid || c.surface, light: c.paper, deep: c.ink, neutralLight: c.mutedDark, neutralDark: c.mutedLight, accent: c.accent, accentDark: c.accentLight };
   }
-  function resolve(k) { return ov[k] || (cur.o && cur.o[k]) || colors[DEF[k]]; }
+  function surface(c) { return mix(c.dark, c.light, 0.08); }
+  function role(c, k, mode) { var key = mode === 'dark' ? DARK_DEF[k] : DEF[k]; return key === 'surface' ? surface(c) : c[key]; }
+  function resolve(k, mode) {
+    mode = mode || editMode;
+    return mode === 'dark' ? (darkOv[k] || (cur.d && cur.d[k]) || role(colors, k, mode)) : (ov[k] || (cur.o && cur.o[k]) || role(colors, k, mode));
+  }
   function lum(hex) {
     var n = parseInt(hex.slice(1), 16), a = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
     return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
@@ -387,9 +422,10 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  function pick(p, k) { return (p.o && p.o[k]) || p.c[DEF[k]]; }
+  function pick(p, k, mode) { return mode === 'dark' ? ((p.d && p.d[k]) || role(p.c, k, mode)) : ((p.o && p.o[k]) || role(p.c, k, mode)); }
   function cardHTML(p) {
-    var e = function (k) { return pick(p, k); };
+    var mode = viewMode === 'compare' ? editMode : viewMode;
+    var e = function (k) { return pick(p, k, mode); };
     var t1 = '<span class="th" style="background:' + e('o1bg') + ';color:' + e('o1ink') + '">' +
       '<span class="tw" style="background:' + e('o1win') + ';--a:' + e('o1accent') + ';--t:' + e('o1wintext') + '"></span>' +
       '<span class="tf"></span><span class="tg" style="background:' + e('o1ink') + '"></span>' +
@@ -501,6 +537,7 @@
   var crow = [];
   function renderContrast() {
     var R = resolve;
+    $('contrastTitle').textContent = 'Contraste · aplicação ' + (editMode === 'dark' ? 'escura' : 'clara');
     crow = [
       ['Peça 1'], ['Título e assinatura', 'o1ink', 'o1bg', 0], ['Destaque', 'o1emph', 'o1bg', 1], ['Texto na janela', 'o1wintext', 'o1win', 0], ['Itens pendentes', 'o1winmuted', 'o1win', 0], ['Acento na janela', 'o1accent', 'o1win', 1],
       ['Peça 2'], ['Número', 'p2number', 'p2bg', 1], ['Título', 'p2title', 'p2bg', 1], ['Corpo', 'p2body', 'p2bg', 0],
@@ -519,48 +556,60 @@
     var dk = ensure(fg, bg, need, '#000000'), lt = ensure(fg, bg, need, '#FFFFFF'), okD = ratio(dk, bg) >= need, okL = ratio(lt, bg) >= need;
     function dist(a, b) { var A = h2r(a), B = h2r(b); return Math.abs(A[0] - B[0]) + Math.abs(A[1] - B[1]) + Math.abs(A[2] - B[2]); }
     var nv = okD && okL ? (dist(fg, dk) <= dist(fg, lt) ? dk : lt) : (okD ? dk : (okL ? lt : (ratio(dk, bg) >= ratio(lt, bg) ? dk : lt)));
-    ov[r[1]] = nv; apply();
+    (editMode === 'dark' ? darkOv : ov)[r[1]] = nv; apply();
     statusEl.textContent = 'Ajustei "' + r[0] + '" de ' + fg.toUpperCase() + ' para ' + nv + '.';
   });
   function apply() {
     BASE.forEach(function (b) { var o = baseIn[b[0]]; if (o) { o.c.value = colors[b[0]].toLowerCase(); o.t.value = colors[b[0]]; if (o.hint) o.hint.textContent = b[2] + (derived[b[0]] ? ' · ' + derived[b[0]] : ''); } });
     ELEMS.forEach(function (g) { g.items.forEach(function (it) {
       var k = it[0], v = resolve(k), o = elemIn[k];
-      stage.style.setProperty('--e-' + k, v);
-      if (o) { o.c.value = v.toLowerCase(); o.t.value = v.toUpperCase(); o.row.classList.toggle('ov', !!ov[k]); o.rs.hidden = !ov[k]; }
+      stage.style.setProperty('--e-' + k, resolve(k, 'light'));
+      darkStage.style.setProperty('--e-' + k, resolve(k, 'dark'));
+      if (o) { o.c.value = v.toLowerCase(); o.t.value = v.toUpperCase(); o.row.classList.toggle('ov', !!(editMode === 'dark' ? darkOv[k] : ov[k])); o.rs.hidden = !(editMode === 'dark' ? darkOv[k] : ov[k]); }
     }); });
     var title = cur.name + (isCustom() ? ' (ajustada)' : '');
     $('pname').textContent = title; $('pn').textContent = title;
+    stage.hidden = viewMode === 'dark'; darkStage.hidden = viewMode === 'light';
+    $('lightLabel').hidden = viewMode !== 'compare'; $('darkLabel').hidden = viewMode !== 'compare';
+    $('editMode').hidden = viewMode !== 'compare';
+    $('editHint').textContent = 'Aplicação ' + (editMode === 'dark' ? 'escura' : 'clara') + ': os ajustes abaixo afetam somente estas peças.' + (editMode === 'dark' ? ' Superfície derivada: ' + surface(colors) + '.' : '');
+    $('elemTokens').querySelectorAll('h3.grp')[1].textContent = 'Peça 2 · fundo ' + (editMode === 'dark' ? 'escuro' : 'claro');
+    $('elemTokens').querySelectorAll('h3.grp')[2].textContent = 'Peça 3 · ' + (editMode === 'dark' ? 'superfície escura' : 'fundo intermediário');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) { b.setAttribute('aria-pressed', b.dataset.view === viewMode ? 'true' : 'false'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-edit]'), function (b) { b.setAttribute('aria-pressed', b.dataset.edit === editMode ? 'true' : 'false'); });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-feed]'), function (b) { b.setAttribute('aria-pressed', b.dataset.feed === feedMode ? 'true' : 'false'); });
+    stage.setAttribute('data-feed', feedMode); darkStage.setAttribute('data-feed', feedMode);
     Array.prototype.forEach.call(belt.querySelectorAll('.pcard'), function (b) { b.setAttribute('aria-pressed', b.dataset.id === cur.id ? 'true' : 'false'); });
     $('update').hidden = !cur.saved;
     renderContrast(); persist();
   }
-  function choose(p) { cur = p; colors = Object.assign({}, p.c); ov = {}; derived = {}; statusEl.textContent = ''; outEl.hidden = true; apply(); }
+  function choose(p) { cur = p; colors = Object.assign({}, p.c); ov = {}; darkOv = {}; derived = {}; statusEl.textContent = ''; outEl.hidden = true; apply(); }
   function merged() { return Object.assign({}, cur.o || {}, ov); }
+  function mergedDark() { return Object.assign({}, cur.d || {}, darkOv); }
   function saveNew() {
     var n = snameEl.value.trim() || ('Paleta ' + (saved.length + 1)), by = $('sby').value.trim();
-    var p = { id: 's' + Date.now(), name: n, tag: 'Salva', saved: true, c: Object.assign({}, colors), o: merged() };
+    var p = { id: 's' + Date.now(), name: n, tag: 'Salva', saved: true, c: Object.assign({}, colors), o: merged(), d: mergedDark() };
     function done(q) {
-      saved.push(q); cur = q; ov = {}; derived = {}; snameEl.value = '';
+      saved.push(q); cur = q; ov = {}; darkOv = {}; derived = {}; snameEl.value = '';
       renderBelt(); apply(); statusEl.textContent = 'Salva na esteira como "' + n + '".';
       belt.scrollTo({ left: belt.scrollWidth, behavior: 'smooth' });
     }
     if (!SHARED) { done(p); store('wt-saved2', saved); return; }
     store('wt-by', by); statusEl.textContent = 'Salvando…';
-    api('POST', '', { name: n, by: by, c: p.c, o: p.o }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
+    api('POST', '', { name: n, by: by, c: p.c, o: p.o, d: p.d }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
   }
   function updateCur() {
     if (!cur.saved) return;
-    var c = Object.assign({}, colors), o = merged(), p = cur;
-    function done() { p.o = o; p.c = c; ov = {}; renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.'; }
+    var c = Object.assign({}, colors), o = merged(), d = mergedDark(), p = cur;
+    function done() { p.o = o; p.d = d; p.c = c; ov = {}; darkOv = {}; renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.'; }
     if (!SHARED) { done(); store('wt-saved2', saved); return; }
     statusEl.textContent = 'Salvando…';
-    api('PUT', p.id, { name: p.name, by: p.by, c: c, o: o }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
+    api('PUT', p.id, { name: p.name, by: p.by, c: c, o: o, d: d }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
   }
   function removePalette(p) {
     function done() {
       saved = saved.filter(function (x) { return x.id !== p.id; });
-      if (cur.id === p.id) { cur = fallback(); colors = Object.assign({}, cur.c); ov = {}; derived = {}; }
+      if (cur.id === p.id) { cur = fallback(); colors = Object.assign({}, cur.c); ov = {}; darkOv = {}; derived = {}; }
       renderBelt(); apply(); statusEl.textContent = '"' + p.name + '" excluída.';
     }
     if (!p.saved) { hidden.push(p.id); store('wt-hidden', hidden); done(); return; }
@@ -598,9 +647,9 @@
     var box = document.createElement('div'); box.className = 'tokens'; box.style.marginTop = '0'; $('elemTokens').appendChild(box);
     g.items.forEach(function (it) {
       var k = it[0], o = mkRow(box, 'e-' + k, it[1], ''); elemIn[k] = o;
-      o.c.addEventListener('input', function () { ov[k] = o.c.value.toUpperCase(); apply(); });
-      o.t.addEventListener('change', function () { var v = parseHex(o.t); if (v) { ov[k] = v; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
-      o.rs.addEventListener('click', function () { delete ov[k]; apply(); });
+      o.c.addEventListener('input', function () { (editMode === 'dark' ? darkOv : ov)[k] = o.c.value.toUpperCase(); apply(); });
+      o.t.addEventListener('change', function () { var v = parseHex(o.t); if (v) { (editMode === 'dark' ? darkOv : ov)[k] = v; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
+      o.rs.addEventListener('click', function () { delete (editMode === 'dark' ? darkOv : ov)[k]; apply(); });
     });
   });
 
@@ -721,7 +770,7 @@
   function applyImport() {
     var res = build(impSel), em = ensure(res.c.accentDark, res.c.mid, 3.2, lum(res.c.mid) > 0.25 ? '#000000' : '#FFFFFF');
     cur = { id: 'imp', name: 'Importada', tag: 'Importada', c: res.c, o: { p3emph: em } };
-    colors = Object.assign({}, res.c); ov = {}; derived = res.fl; apply();
+    colors = Object.assign({}, res.c); ov = {}; darkOv = {}; derived = res.fl; apply();
     statusEl.textContent = 'Paleta importada. Salve na esteira para guardar.';
     impEl.hidden = true; $('importBtn').setAttribute('aria-expanded', 'false');
   }
@@ -749,16 +798,34 @@
   $('copy').addEventListener('click', function () {
     var lines = [cur.name + (isCustom() ? ' (ajustada)' : ''), '', 'Paleta base'];
     BASE.forEach(function (b) { lines.push(b[1] + ': ' + colors[b[0]].toUpperCase()); });
-    lines.push('', 'Elementos');
-    ELEMS.forEach(function (g) { g.items.forEach(function (it) { lines.push(g.g.split(' · ')[0] + ' ' + it[1] + ': ' + resolve(it[0]).toUpperCase()); }); });
+    ['light', 'dark'].forEach(function (mode) {
+      lines.push('', 'Elementos · aplicação ' + (mode === 'dark' ? 'escura' : 'clara'));
+      ELEMS.forEach(function (g) { g.items.forEach(function (it) { lines.push(g.g.split(' · ')[0] + ' ' + it[1] + ': ' + resolve(it[0], mode).toUpperCase()); }); });
+    });
     var text = lines.join('\n'); outEl.value = text;
     var fb = function () { outEl.hidden = false; outEl.focus(); outEl.select(); statusEl.textContent = 'Selecione e copie o texto abaixo.'; };
     if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(text).then(function () { outEl.hidden = true; statusEl.textContent = 'Valores copiados.'; }, fb); } else { fb(); }
   });
+  function updateThumbnails() {
+    var list = all();
+    Array.prototype.forEach.call(belt.querySelectorAll('.pcard'), function (b) {
+      var p = list.filter(function (x) { return x.id === b.dataset.id; })[0];
+      if (p) b.innerHTML = cardHTML(p);
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) {
+    b.addEventListener('click', function () {
+      viewMode = b.dataset.view;
+      if (viewMode !== 'compare') editMode = viewMode;
+      apply(); updateThumbnails();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-edit]'), function (b) {
+    b.addEventListener('click', function () { editMode = b.dataset.edit; apply(); updateThumbnails(); });
+  });
   Array.prototype.forEach.call(document.querySelectorAll('[data-feed]'), function (b) {
     b.addEventListener('click', function () {
-      stage.setAttribute('data-feed', b.dataset.feed);
-      Array.prototype.forEach.call(document.querySelectorAll('[data-feed]'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      feedMode = b.dataset.feed; apply();
     });
   });
   $('prev').addEventListener('click', function () { belt.scrollBy({ left: -360, behavior: 'smooth' }); });
@@ -799,7 +866,13 @@
     if (!st) return;
     var f = all().concat([ORIGINAL]).filter(function (p) { return p.id === st.id; })[0];
     if (!f && st.id === 'imp' && st.imp) { f = st.imp; derived = st.derived || {}; }
-    if (f) { cur = f; colors = Object.assign({}, f.c, st.colors || {}); ov = st.ov || {}; }
+    if (f) { cur = f; colors = Object.assign({}, f.c, st.colors || {}); ov = st.ov || {}; darkOv = st.darkOv || {}; }
+  }
+  if (st) {
+    viewMode = ['light', 'dark', 'compare'].indexOf(st.view) >= 0 ? st.view : 'light';
+    editMode = ['light', 'dark'].indexOf(st.edit) >= 0 ? st.edit : (viewMode === 'dark' ? 'dark' : 'light');
+    if (viewMode !== 'compare') editMode = viewMode;
+    feedMode = st.feed === 'dark' ? 'dark' : 'light';
   }
   if (st && st.open === false) open = false;
   if (window.innerWidth < 1100) open = false;

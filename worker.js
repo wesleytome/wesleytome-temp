@@ -43,6 +43,7 @@ function clean(body, id) {
     by: String(body.by || '').slice(0, 30),
     c,
     o: hexes(body.o),
+    d: hexes(body.d),
     at: Date.now()
   };
 }
