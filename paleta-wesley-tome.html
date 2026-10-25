@@ -102,6 +102,20 @@
   .control-group .caption { color: var(--muted); font-size: 12px; font-weight: 600; margin-right: 2px; }
   .edit-mode { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   .edit-mode .btn { padding: 5px 9px; }
+  .recipe { display: grid; gap: 8px; margin-top: 8px; }
+  .recipe-bar { display: flex; height: 30px; overflow: hidden; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(127,127,127,.25); }
+  .recipe-bar i { display: block; min-width: 5px; }
+  .recipe-legend { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 5px 10px; font-size: 11.5px; color: var(--muted); }
+  .recipe-legend span { display: flex; align-items: center; gap: 6px; }
+  .recipe-legend i { width: 10px; height: 10px; flex: none; border-radius: 3px; box-shadow: 0 0 0 1px rgba(127,127,127,.35); }
+  .signature-choices .btn { display: inline-flex; align-items: center; gap: 7px; }
+  .signature-choices .btn i { width: 14px; height: 14px; flex: none; border-radius: 4px; box-shadow: 0 0 0 1px rgba(127,127,127,.4); }
+  .signature-choices .btn small { font: 10px ui-monospace, Menlo, monospace; color: var(--muted); }
+  .diagnostics { display: grid; gap: 6px; margin-top: 8px; }
+  .diag { display: grid; grid-template-columns: 18px 1fr; gap: 6px; align-items: start; font-size: 12.5px; line-height: 1.4; }
+  .diag i { font-style: normal; font-weight: 700; }
+  .diag.ok i { color: #4E7B53; }
+  .diag.warn i { color: #B26A18; }
 
   .piece { container-type: inline-size; aspect-ratio: 4 / 5; position: relative; overflow: hidden; border-radius: 14px; padding: 8% 7.5% 6.5%; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; font-family: var(--tight); }
   .piece h3, .piece p { margin: 0; }
@@ -239,6 +253,7 @@
       <div class="control-group" role="group" aria-label="Aplicação das peças">
         <span class="caption">Peças</span>
         <button class="btn" type="button" data-view="light" aria-pressed="true">Claras</button>
+        <button class="btn" type="button" data-view="signature" aria-pressed="false">Assinatura</button>
         <button class="btn" type="button" data-view="dark" aria-pressed="false">Escuras</button>
         <button class="btn" type="button" data-view="compare" aria-pressed="false">Comparar</button>
       </div>
@@ -296,6 +311,8 @@
       <div class="foot"><span>Wesley Tomé</span><span>wesleytome.com</span></div>
     </article>
   </div>
+  <h2 class="preview-label" id="signatureLabel" hidden>Aplicação assinatura</h2>
+  <div class="stage" id="signatureStage" data-feed="light" hidden></div>
   <h2 class="preview-label" id="darkLabel" hidden>Aplicação escura</h2>
   <div class="stage" id="darkStage" data-feed="light" hidden></div>
 </div>
@@ -326,16 +343,29 @@
       <div class="tokens" id="baseTokens"></div>
     </section>
     <section>
+      <h2>Explorar assinatura</h2>
+      <p class="sub">A aplicação começa no acento escuro. Compare com uma variação mais suave, derivada do acento, para áreas maiores.</p>
+      <div class="row signature-choices" role="group" aria-label="Tom da aplicação assinatura">
+        <button class="btn" type="button" id="signatureBrand" aria-pressed="true">Acento escuro</button>
+        <button class="btn" type="button" id="signatureSoft" aria-pressed="false">Tom suave sugerido</button>
+      </div>
+      <div class="tokens" id="signatureTokens"></div>
+      <p class="sub" id="signatureHint" aria-live="polite"></p>
+    </section>
+    <section>
       <h2>Elementos</h2>
       <p class="sub">Cada elemento segue a base da aplicação escolhida. Escolha outra cor para soltá-lo, e use ↺ para voltar.</p>
       <div class="edit-mode" id="editMode" role="group" aria-label="Aplicação em edição" hidden>
         <span class="caption">Editando</span>
         <button class="btn" type="button" data-edit="light" aria-pressed="true">Clara</button>
+        <button class="btn" type="button" data-edit="signature" aria-pressed="false">Assinatura</button>
         <button class="btn" type="button" data-edit="dark" aria-pressed="false">Escura</button>
       </div>
       <p class="sub" id="editHint"></p>
       <div id="elemTokens"></div>
     </section>
+    <section><h2>Receita de uso</h2><p class="sub">Uma referência de proporção para a aplicação selecionada.</p><div class="recipe" id="recipe"></div></section>
+    <section><h2>Diagnóstico</h2><div class="diagnostics" id="diagnostics"></div></section>
     <section><h2 id="contrastTitle" style="margin-bottom:6px">Contraste · aplicação clara</h2><table id="contrast"></table></section>
     <section class="save">
       <h2>Salvar na esteira</h2>
@@ -366,9 +396,20 @@
     { g: 'Peça 3 · fundo intermediário', items: [['p3bg', 'Fundo', 'mid'], ['p3title', 'Título', 'deep'], ['p3body', 'Segunda linha', 'deep'], ['p3emph', 'Palavra de ênfase', 'deep']] }
   ];
   var DEF = {}; ELEMS.forEach(function (g) { g.items.forEach(function (it) { DEF[it[0]] = it[2]; }); });
-  // Dark pieces reuse the base palette; only their element roles and optional overrides differ.
+  // Each application reuses the base palette; only its semantic roles and optional overrides differ.
   var DARK_DEF = { o1bg:'dark', o1ink:'light', o1emph:'accent', o1win:'surface', o1wintext:'light', o1winmuted:'neutralLight', o1accent:'accent', p2bg:'deep', p2number:'accent', p2title:'light', p2body:'neutralLight', p3bg:'surface', p3title:'light', p3body:'neutralLight', p3emph:'accent' };
-  function P(id, name, tag, c, emph, o) { return { id: id, name: name, tag: tag, c: { dark: c[0], mid: c[1], light: c[2], deep: c[3], neutralLight: c[4], neutralDark: c[5], accent: c[6], accentDark: c[7] }, o: Object.assign({ p3emph: emph }, o || {}) }; }
+  var SIGN_DEF = { o1bg:'signature', o1ink:'light', o1emph:'light', o1win:'deep', o1wintext:'light', o1winmuted:'signatureWindowMuted', o1accent:'accent', p2bg:'signature', p2number:'light', p2title:'light', p2body:'signatureMuted', p3bg:'signatureSurface', p3title:'light', p3body:'signatureMuted', p3emph:'light' };
+  function signatureTone(c) { return ensure(mix(c.accent, c.dark, 0.38), c.light, 4.5, c.dark); }
+  function signatureStyle(c) { return c.signature === c.accentDark ? 'accentDark' : (c.signature === signatureTone(c) ? 'soft' : 'custom'); }
+  function syncSignatureAfterBaseChange(previousStyle) {
+    if (previousStyle === 'accentDark') colors.signature = colors.accentDark;
+    else if (previousStyle === 'soft') colors.signature = signatureTone(colors);
+  }
+  function P(id, name, tag, c, emph, o) {
+    var colors = { dark:c[0], mid:c[1], light:c[2], deep:c[3], neutralLight:c[4], neutralDark:c[5], accent:c[6], accentDark:c[7] };
+    colors.signature = c[8] || colors.accentDark;
+    return { id:id, name:name, tag:tag, c:colors, o:Object.assign({ p3emph:emph }, o || {}) };
+  }
   var ORIGINAL = P('original', 'Papel + laranja', 'Card original', ['#3B383B', '#BDB2A6', '#ECE4DB', '#2D2E29', '#6D6D6F', '#6A625A', '#DC7145', '#A84E25'], '#6E2F12', { o1emph: '#DC7145', o1wintext: '#EEEBEE' });
   /* Shared mode (the deployed site): the belt lives on the server and starts empty. Local mode (localhost or file): presets + this browser's saves. */
   var SHARED = (/^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) || /[?&]compartilhado\b/.test(location.search);
@@ -384,11 +425,13 @@
     P('lima', 'Carvão + lima', 'Referência', ['#2C2C2C', '#A5A59F', '#F4F4F1', '#1B1B1B', '#C5C5C5', '#696965', '#D4EC61', '#5F6B16'], '#46500F')
   ];
   var $ = function (id) { return document.getElementById(id); };
-  var stage = $('stage'), darkStage = $('darkStage'), belt = $('belt'), contrastEl = $('contrast'), statusEl = $('status'), outEl = $('out'), dock = $('dock'), tab = $('tab'), snameEl = $('sname');
-  darkStage.innerHTML = stage.innerHTML;
+  var stage = $('stage'), signatureStage = $('signatureStage'), darkStage = $('darkStage'), belt = $('belt'), contrastEl = $('contrast'), statusEl = $('status'), outEl = $('out'), dock = $('dock'), tab = $('tab'), snameEl = $('sname');
+  signatureStage.innerHTML = stage.innerHTML; darkStage.innerHTML = stage.innerHTML;
+  signatureStage.querySelector('.b').setAttribute('aria-label', 'Peça 2, fundo assinatura');
+  signatureStage.querySelector('.c').setAttribute('aria-label', 'Peça 3, superfície assinatura');
   darkStage.querySelector('.b').setAttribute('aria-label', 'Peça 2, fundo escuro');
   darkStage.querySelector('.c').setAttribute('aria-label', 'Peça 3, superfície escura');
-  var saved = [], hidden = [], favorites = [], favOnly = false, loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, darkOv = {}, derived = {}, baseIn = {}, elemIn = {}, viewMode = 'light', editMode = 'light', feedMode = 'light';
+  var saved = [], hidden = [], favorites = [], favOnly = false, loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, signatureOv = {}, darkOv = {}, derived = {}, baseIn = {}, elemIn = {}, viewMode = 'light', editMode = 'light', feedMode = 'light';
 
   var order = [], dragging = false;
   function all() {
@@ -402,21 +445,30 @@
     return fetch(API + (path ? '/' + encodeURIComponent(path) : ''), { method: method, headers: body ? { 'content-type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
-  function fromServer(p) { return { id: p.id, name: p.name, by: p.by, tag: p.by ? 'por ' + p.by : 'Salva', saved: true, c: Object.assign({}, ORIGINAL.c, p.c), o: p.o || {}, d: p.d || {}, at: p.at }; }
+  function normalizeColors(c) { var out = Object.assign({}, ORIGINAL.c, c || {}); if (!c || !c.signature) out.signature = out.accentDark; return out; }
+  function fromServer(p) { return { id:p.id, name:p.name, by:p.by, tag:p.by ? 'por ' + p.by : 'Salva', saved:true, c:normalizeColors(p.c), o:p.o || {}, s:p.s || {}, d:p.d || {}, at:p.at }; }
   function setSync(t) { $('sync').textContent = t; }
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
-  function isCustom() { return Object.keys(ov).length > 0 || Object.keys(darkOv).length > 0 || BASE.some(function (b) { return colors[b[0]] !== cur.c[b[0]]; }); }
-  function persist() { store('wt-state2', { id: cur.id, colors: colors, ov: ov, darkOv: darkOv, derived: derived, imp: cur.id === 'imp' ? cur : null, open: dock.getAttribute('data-open') === 'true', view: viewMode, edit: editMode, feed: feedMode, favOnly: favOnly }); }
+  function isCustom() { return Object.keys(ov).length > 0 || Object.keys(signatureOv).length > 0 || Object.keys(darkOv).length > 0 || BASE.some(function (b) { return colors[b[0]] !== normalizeColors(cur.c)[b[0]]; }) || colors.signature !== normalizeColors(cur.c).signature; }
+  function persist() { store('wt-state2', { id:cur.id, colors:colors, ov:ov, signatureOv:signatureOv, darkOv:darkOv, derived:derived, imp:cur.id === 'imp' ? cur : null, open:dock.getAttribute('data-open') === 'true', view:viewMode, edit:editMode, feed:feedMode, favOnly:favOnly }); }
   function migrate(c) {
     if (!c || c.base === undefined) return c;
-    return { dark: c.base, mid: c.mid || c.surface, light: c.paper, deep: c.ink, neutralLight: c.mutedDark, neutralDark: c.mutedLight, accent: c.accent, accentDark: c.accentLight };
+    return { dark:c.base, mid:c.mid || c.surface, light:c.paper, deep:c.ink, signature:c.signature, neutralLight:c.mutedDark, neutralDark:c.mutedLight, accent:c.accent, accentDark:c.accentLight };
   }
   function surface(c) { return mix(c.dark, c.light, 0.08); }
-  function role(c, k, mode) { var key = mode === 'dark' ? DARK_DEF[k] : DEF[k]; return key === 'surface' ? surface(c) : c[key]; }
+  function signatureSurface(c) { return mix(c.signature, c.dark, 0.12); }
+  function signatureMuted(c) { return ensure(mix(c.light, c.signature, 0.20), c.signature, 4.5, c.light); }
+  function signatureWindowMuted(c) { return ensure(c.neutralLight, c.deep, 4.5, c.light); }
+  function role(c, k, mode) {
+    var key = mode === 'dark' ? DARK_DEF[k] : (mode === 'signature' ? SIGN_DEF[k] : DEF[k]);
+    return key === 'surface' ? surface(c) : (key === 'signatureSurface' ? signatureSurface(c) : (key === 'signatureMuted' ? signatureMuted(c) : (key === 'signatureWindowMuted' ? signatureWindowMuted(c) : c[key])));
+  }
   function resolve(k, mode) {
     mode = mode || editMode;
-    return mode === 'dark' ? (darkOv[k] || (cur.d && cur.d[k]) || role(colors, k, mode)) : (ov[k] || (cur.o && cur.o[k]) || role(colors, k, mode));
+    if (mode === 'dark') return darkOv[k] || (cur.d && cur.d[k]) || role(colors, k, mode);
+    if (mode === 'signature') return signatureOv[k] || (cur.s && cur.s[k]) || role(colors, k, mode);
+    return ov[k] || (cur.o && cur.o[k]) || role(colors, k, mode);
   }
   function lum(hex) {
     var n = parseInt(hex.slice(1), 16), a = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
@@ -430,7 +482,11 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
-  function pick(p, k, mode) { return mode === 'dark' ? ((p.d && p.d[k]) || role(p.c, k, mode)) : ((p.o && p.o[k]) || role(p.c, k, mode)); }
+  function pick(p, k, mode) {
+    if (mode === 'dark') return (p.d && p.d[k]) || role(p.c, k, mode);
+    if (mode === 'signature') return (p.s && p.s[k]) || role(p.c, k, mode);
+    return (p.o && p.o[k]) || role(p.c, k, mode);
+  }
   function cardHTML(p) {
     var mode = viewMode === 'compare' ? editMode : viewMode;
     var e = function (k) { return pick(p, k, mode); };
@@ -559,9 +615,11 @@
     $('favFilter').setAttribute('aria-pressed', favOnly ? 'true' : 'false');
   }
   var crow = [];
+  function modeLabel(mode) { return mode === 'dark' ? 'escura' : (mode === 'signature' ? 'assinatura' : 'clara'); }
+  function currentOverrides() { return editMode === 'dark' ? darkOv : (editMode === 'signature' ? signatureOv : ov); }
   function renderContrast() {
     var R = resolve;
-    $('contrastTitle').textContent = 'Contraste · aplicação ' + (editMode === 'dark' ? 'escura' : 'clara');
+    $('contrastTitle').textContent = 'Contraste · aplicação ' + modeLabel(editMode);
     crow = [
       ['Peça 1'], ['Título e assinatura', 'o1ink', 'o1bg', 0], ['Destaque', 'o1emph', 'o1bg', 1], ['Texto na janela', 'o1wintext', 'o1win', 0], ['Itens pendentes', 'o1winmuted', 'o1win', 0], ['Acento na janela', 'o1accent', 'o1win', 1],
       ['Peça 2'], ['Número', 'p2number', 'p2bg', 1], ['Título', 'p2title', 'p2bg', 1], ['Corpo', 'p2body', 'p2bg', 0],
@@ -580,61 +638,95 @@
     var dk = ensure(fg, bg, need, '#000000'), lt = ensure(fg, bg, need, '#FFFFFF'), okD = ratio(dk, bg) >= need, okL = ratio(lt, bg) >= need;
     function dist(a, b) { var A = h2r(a), B = h2r(b); return Math.abs(A[0] - B[0]) + Math.abs(A[1] - B[1]) + Math.abs(A[2] - B[2]); }
     var nv = okD && okL ? (dist(fg, dk) <= dist(fg, lt) ? dk : lt) : (okD ? dk : (okL ? lt : (ratio(dk, bg) >= ratio(lt, bg) ? dk : lt)));
-    (editMode === 'dark' ? darkOv : ov)[r[1]] = nv; apply();
+    currentOverrides()[r[1]] = nv; apply();
     statusEl.textContent = 'Ajustei "' + r[0] + '" de ' + fg.toUpperCase() + ' para ' + nv + '.';
   });
+  function renderRecipe() {
+    var parts = [
+      ['Fundo', resolve('p2bg'), 58], ['Superfície', resolve('p3bg'), 22], ['Texto', resolve('p2title'), 14], ['Acento', colors.accent, 6]
+    ];
+    $('recipe').innerHTML = '<div class="recipe-bar" aria-label="Proporção sugerida: fundo 58%, superfície 22%, texto 14%, acento 6%">' + parts.map(function (p) { return '<i style="width:' + p[2] + '%;background:' + p[1] + '"></i>'; }).join('') + '</div><div class="recipe-legend">' + parts.map(function (p) { return '<span><i style="background:' + p[1] + '"></i>' + p[0] + ' · ' + p[2] + '%</span>'; }).join('') + '</div>';
+  }
+  function renderDiagnostics() {
+    var notes = [], fails = 0;
+    crow.forEach(function (r) { if (r.length > 1 && ratio(resolve(r[1]), resolve(r[2])) < (r[3] ? 3 : 4.5)) fails++; });
+    if (fails) notes.push(['warn', fails + (fails === 1 ? ' relação de contraste precisa de ajuste.' : ' relações de contraste precisam de ajuste.')]);
+    else notes.push(['ok', 'Todos os textos passam nos contrastes previstos.']);
+    if (ratio(colors.signature, colors.dark) < 1.35) notes.push(['warn', 'Assinatura muito próxima do tom escuro. Clareie ou aqueça essa cor.']);
+    if (ratio(colors.signature, colors.light) < 1.35) notes.push(['warn', 'Assinatura muito próxima do tom claro. Dê mais presença a essa cor.']);
+    if (ratio(resolve('p3bg'), resolve('p2bg')) < 1.10) notes.push(['warn', 'Fundo e superfície estão quase iguais nesta aplicação.']);
+    $('diagnostics').innerHTML = notes.map(function (n) { return '<div class="diag ' + n[0] + '"><i>' + (n[0] === 'ok' ? '✓' : '!') + '</i><span>' + n[1] + '</span></div>'; }).join('');
+  }
+  function renderSignatureChoices() {
+    var style = signatureStyle(colors), brand = $('signatureBrand'), soft = $('signatureSoft');
+    brand.innerHTML = '<i style="background:' + colors.accentDark + '"></i>Acento escuro <small>' + colors.accentDark + '</small>';
+    soft.innerHTML = '<i style="background:' + signatureTone(colors) + '"></i>Tom suave <small>' + signatureTone(colors) + '</small>';
+    brand.setAttribute('aria-pressed', style === 'accentDark' ? 'true' : 'false');
+    soft.setAttribute('aria-pressed', style === 'soft' ? 'true' : 'false');
+    if (signatureIn) {
+      signatureIn.c.value = colors.signature.toLowerCase(); signatureIn.t.value = colors.signature.toUpperCase();
+      signatureIn.rs.hidden = style === 'accentDark';
+      if (signatureIn.hint) signatureIn.hint.textContent = style === 'accentDark' ? 'segue Acento escuro' : (style === 'soft' ? 'sugestão derivada do acento' : 'ajuste manual');
+    }
+    $('signatureHint').textContent = style === 'accentDark' ? 'Seguindo Acento escuro: ' + colors.signature + '.' : (style === 'soft' ? 'Usando sugestão suave: ' + colors.signature + '.' : 'Tom personalizado: ' + colors.signature + '.');
+  }
   function apply() {
     BASE.forEach(function (b) { var o = baseIn[b[0]]; if (o) { o.c.value = colors[b[0]].toLowerCase(); o.t.value = colors[b[0]]; if (o.hint) o.hint.textContent = b[2] + (derived[b[0]] ? ' · ' + derived[b[0]] : ''); } });
+    renderSignatureChoices();
     ELEMS.forEach(function (g) { g.items.forEach(function (it) {
       var k = it[0], v = resolve(k), o = elemIn[k];
       stage.style.setProperty('--e-' + k, resolve(k, 'light'));
+      signatureStage.style.setProperty('--e-' + k, resolve(k, 'signature'));
       darkStage.style.setProperty('--e-' + k, resolve(k, 'dark'));
-      if (o) { o.c.value = v.toLowerCase(); o.t.value = v.toUpperCase(); o.row.classList.toggle('ov', !!(editMode === 'dark' ? darkOv[k] : ov[k])); o.rs.hidden = !(editMode === 'dark' ? darkOv[k] : ov[k]); }
+      if (o) { o.c.value = v.toLowerCase(); o.t.value = v.toUpperCase(); o.row.classList.toggle('ov', !!currentOverrides()[k]); o.rs.hidden = !currentOverrides()[k]; }
     }); });
     var title = cur.name + (isCustom() ? ' (ajustada)' : '');
     $('pname').textContent = title; $('pn').textContent = title;
-    stage.hidden = viewMode === 'dark'; darkStage.hidden = viewMode === 'light';
-    $('lightLabel').hidden = viewMode !== 'compare'; $('darkLabel').hidden = viewMode !== 'compare';
+    stage.hidden = viewMode !== 'light' && viewMode !== 'compare';
+    signatureStage.hidden = viewMode !== 'signature' && viewMode !== 'compare';
+    darkStage.hidden = viewMode !== 'dark' && viewMode !== 'compare';
+    $('lightLabel').hidden = viewMode !== 'compare'; $('signatureLabel').hidden = viewMode !== 'compare'; $('darkLabel').hidden = viewMode !== 'compare';
     $('editMode').hidden = viewMode !== 'compare';
-    $('editHint').textContent = 'Aplicação ' + (editMode === 'dark' ? 'escura' : 'clara') + ': os ajustes abaixo afetam somente estas peças.' + (editMode === 'dark' ? ' Superfície derivada: ' + surface(colors) + '.' : '');
-    $('elemTokens').querySelectorAll('h3.grp')[1].textContent = 'Peça 2 · fundo ' + (editMode === 'dark' ? 'escuro' : 'claro');
-    $('elemTokens').querySelectorAll('h3.grp')[2].textContent = 'Peça 3 · ' + (editMode === 'dark' ? 'superfície escura' : 'fundo intermediário');
+    $('editHint').textContent = 'Aplicação ' + modeLabel(editMode) + ': os ajustes abaixo afetam somente estas peças.' + (editMode === 'dark' ? ' Superfície derivada: ' + surface(colors) + '.' : (editMode === 'signature' ? ' Superfície assinatura: ' + signatureSurface(colors) + '.' : ''));
+    $('elemTokens').querySelectorAll('h3.grp')[1].textContent = 'Peça 2 · fundo ' + modeLabel(editMode);
+    $('elemTokens').querySelectorAll('h3.grp')[2].textContent = 'Peça 3 · ' + (editMode === 'light' ? 'fundo intermediário' : 'superfície ' + modeLabel(editMode));
     Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) { b.setAttribute('aria-pressed', b.dataset.view === viewMode ? 'true' : 'false'); });
     Array.prototype.forEach.call(document.querySelectorAll('[data-edit]'), function (b) { b.setAttribute('aria-pressed', b.dataset.edit === editMode ? 'true' : 'false'); });
     Array.prototype.forEach.call(document.querySelectorAll('[data-feed]'), function (b) { b.setAttribute('aria-pressed', b.dataset.feed === feedMode ? 'true' : 'false'); });
-    stage.setAttribute('data-feed', feedMode); darkStage.setAttribute('data-feed', feedMode);
+    stage.setAttribute('data-feed', feedMode); signatureStage.setAttribute('data-feed', feedMode); darkStage.setAttribute('data-feed', feedMode);
     Array.prototype.forEach.call(belt.querySelectorAll('.pcard'), function (b) { b.setAttribute('aria-pressed', b.dataset.id === cur.id ? 'true' : 'false'); });
     $('update').hidden = !cur.saved;
-    renderContrast(); persist();
+    renderContrast(); renderRecipe(); renderDiagnostics(); persist();
   }
-  function choose(p) { cur = p; colors = Object.assign({}, p.c); ov = {}; darkOv = {}; derived = {}; statusEl.textContent = ''; outEl.hidden = true; apply(); }
+  function choose(p) { cur = p; colors = normalizeColors(p.c); ov = {}; signatureOv = {}; darkOv = {}; derived = {}; statusEl.textContent = ''; outEl.hidden = true; apply(); }
   function merged() { return Object.assign({}, cur.o || {}, ov); }
+  function mergedSignature() { return Object.assign({}, cur.s || {}, signatureOv); }
   function mergedDark() { return Object.assign({}, cur.d || {}, darkOv); }
   function saveNew() {
     var n = snameEl.value.trim() || ('Paleta ' + (saved.length + 1)), by = $('sby').value.trim();
-    var p = { id: 's' + Date.now(), name: n, tag: 'Salva', saved: true, c: Object.assign({}, colors), o: merged(), d: mergedDark() };
+    var p = { id:'s' + Date.now(), name:n, tag:'Salva', saved:true, c:Object.assign({}, colors), o:merged(), s:mergedSignature(), d:mergedDark() };
     function done(q) {
-      saved.push(q); cur = q; ov = {}; darkOv = {}; derived = {}; snameEl.value = '';
+      saved.push(q); cur = q; ov = {}; signatureOv = {}; darkOv = {}; derived = {}; snameEl.value = '';
       renderBelt(); apply(); statusEl.textContent = 'Salva na esteira como "' + n + '".';
       belt.scrollTo({ left: belt.scrollWidth, behavior: 'smooth' });
     }
     if (!SHARED) { done(p); store('wt-saved2', saved); return; }
     store('wt-by', by); statusEl.textContent = 'Salvando…';
-    api('POST', '', { name: n, by: by, c: p.c, o: p.o, d: p.d }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
+    api('POST', '', { name:n, by:by, c:p.c, o:p.o, s:p.s, d:p.d }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
   }
   function updateCur() {
     if (!cur.saved) return;
-    var c = Object.assign({}, colors), o = merged(), d = mergedDark(), p = cur;
-    function done() { p.o = o; p.d = d; p.c = c; ov = {}; darkOv = {}; renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.'; }
+    var c = Object.assign({}, colors), o = merged(), s = mergedSignature(), d = mergedDark(), p = cur;
+    function done() { p.o = o; p.s = s; p.d = d; p.c = c; ov = {}; signatureOv = {}; darkOv = {}; renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.'; }
     if (!SHARED) { done(); store('wt-saved2', saved); return; }
     statusEl.textContent = 'Salvando…';
-    api('PUT', p.id, { name: p.name, by: p.by, c: c, o: o, d: d }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
+    api('PUT', p.id, { name:p.name, by:p.by, c:c, o:o, s:s, d:d }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
   }
   function removePalette(p) {
     function done() {
       saved = saved.filter(function (x) { return x.id !== p.id; });
       favorites = favorites.filter(function (id) { return id !== p.id; }); store('wt-favorites', favorites);
-      if (cur.id === p.id) { cur = fallback(); colors = Object.assign({}, cur.c); ov = {}; darkOv = {}; derived = {}; }
+      if (cur.id === p.id) { cur = fallback(); colors = normalizeColors(cur.c); ov = {}; signatureOv = {}; darkOv = {}; derived = {}; }
       renderBelt(); apply(); statusEl.textContent = '"' + p.name + '" excluída.';
     }
     if (!p.saved) { hidden.push(p.id); store('wt-hidden', hidden); done(); return; }
@@ -664,17 +756,23 @@
   }
   BASE.forEach(function (b) {
     var o = mkRow($('baseTokens'), 'b-' + b[0], b[1], b[2]); baseIn[b[0]] = o;
-    o.c.addEventListener('input', function () { colors[b[0]] = o.c.value.toUpperCase(); delete derived[b[0]]; apply(); });
-    o.t.addEventListener('change', function () { var v = parseHex(o.t); if (v) { colors[b[0]] = v; delete derived[b[0]]; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
+    o.c.addEventListener('input', function () { var previousStyle = signatureStyle(colors); colors[b[0]] = o.c.value.toUpperCase(); syncSignatureAfterBaseChange(previousStyle); delete derived[b[0]]; apply(); });
+    o.t.addEventListener('change', function () { var v = parseHex(o.t); if (v) { var previousStyle = signatureStyle(colors); colors[b[0]] = v; syncSignatureAfterBaseChange(previousStyle); delete derived[b[0]]; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
   });
+  var signatureIn = mkRow($('signatureTokens'), 'signature', 'Cor da aplicação', 'derivada do Acento escuro');
+  signatureIn.c.addEventListener('input', function () { colors.signature = signatureIn.c.value.toUpperCase(); apply(); });
+  signatureIn.t.addEventListener('change', function () { var v = parseHex(signatureIn.t); if (v) { colors.signature = v; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
+  signatureIn.rs.addEventListener('click', function () { colors.signature = colors.accentDark; apply(); });
+  $('signatureBrand').addEventListener('click', function () { colors.signature = colors.accentDark; apply(); });
+  $('signatureSoft').addEventListener('click', function () { colors.signature = signatureTone(colors); apply(); });
   ELEMS.forEach(function (g) {
     var h = document.createElement('h3'); h.className = 'grp'; h.textContent = g.g; $('elemTokens').appendChild(h);
     var box = document.createElement('div'); box.className = 'tokens'; box.style.marginTop = '0'; $('elemTokens').appendChild(box);
     g.items.forEach(function (it) {
       var k = it[0], o = mkRow(box, 'e-' + k, it[1], ''); elemIn[k] = o;
-      o.c.addEventListener('input', function () { (editMode === 'dark' ? darkOv : ov)[k] = o.c.value.toUpperCase(); apply(); });
-      o.t.addEventListener('change', function () { var v = parseHex(o.t); if (v) { (editMode === 'dark' ? darkOv : ov)[k] = v; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
-      o.rs.addEventListener('click', function () { delete (editMode === 'dark' ? darkOv : ov)[k]; apply(); });
+      o.c.addEventListener('input', function () { currentOverrides()[k] = o.c.value.toUpperCase(); apply(); });
+      o.t.addEventListener('change', function () { var v = parseHex(o.t); if (v) { currentOverrides()[k] = v; statusEl.textContent = ''; } else { statusEl.textContent = 'Use seis dígitos, como #2D2D3E.'; } apply(); });
+      o.rs.addEventListener('click', function () { delete currentOverrides()[k]; apply(); });
     });
   });
 
@@ -700,7 +798,7 @@
       h = '#' + h.toUpperCase(); if (out.indexOf(h) < 0) out.push(h);
       re.lastIndex = m.index + m[0].length;
     }
-    return out.slice(0, 8);
+    return out.slice(0, 9);
   }
   function fromImage(file) {
     return new Promise(function (resolveP, rejectP) {
@@ -716,7 +814,7 @@
         }
         var list = Object.keys(bk).map(function (k) { var o = bk[k]; return { n: o.n, r: o.r / o.n, g: o.g / o.n, b: o.b / o.n }; }).sort(function (a, b) { return b.n - a.n; }), picks = [];
         list.forEach(function (c) {
-          if (picks.length >= 8 || c.n / total < 0.02) return;
+          if (picks.length >= 9 || c.n / total < 0.02) return;
           var far = picks.every(function (p) { return Math.sqrt(Math.pow(p.r - c.r, 2) + Math.pow(p.g - c.g, 2) + Math.pow(p.b - c.b, 2)) > 24; });
           if (far) picks.push(c);
         });
@@ -767,6 +865,7 @@
     c.neutralLight = sel.neutralLight || ensure(mix(c.mid, c.light, 0.5), c.dark, 4.5, '#FFFFFF');
     c.neutralDark = sel.neutralDark || ensure(mix(c.mid, c.dark, 0.5), c.light, 4.5, '#000000');
     c.accentDark = sel.accentDark || ensure(c.accent, c.light, 4.5, '#000000');
+    c.signature = c.accentDark;
     BASE.forEach(function (b) { var k = b[0]; if (!sel[k]) fl[k] = k === 'accent' ? 'sugerido' : 'derivado'; });
     return { c: c, fl: fl };
   }
@@ -795,7 +894,7 @@
   function applyImport() {
     var res = build(impSel), em = ensure(res.c.accentDark, res.c.mid, 3.2, lum(res.c.mid) > 0.25 ? '#000000' : '#FFFFFF');
     cur = { id: 'imp', name: 'Importada', tag: 'Importada', c: res.c, o: { p3emph: em } };
-    colors = Object.assign({}, res.c); ov = {}; darkOv = {}; derived = res.fl; apply();
+    colors = Object.assign({}, res.c); ov = {}; signatureOv = {}; darkOv = {}; derived = res.fl; apply();
     statusEl.textContent = 'Paleta importada. Salve na esteira para guardar.';
     impEl.hidden = true; $('importBtn').setAttribute('aria-expanded', 'false');
   }
@@ -823,8 +922,9 @@
   $('copy').addEventListener('click', function () {
     var lines = [cur.name + (isCustom() ? ' (ajustada)' : ''), '', 'Paleta base'];
     BASE.forEach(function (b) { lines.push(b[1] + ': ' + colors[b[0]].toUpperCase()); });
-    ['light', 'dark'].forEach(function (mode) {
-      lines.push('', 'Elementos · aplicação ' + (mode === 'dark' ? 'escura' : 'clara'));
+    lines.push('Assinatura (aplicação): ' + colors.signature.toUpperCase() + (signatureStyle(colors) === 'accentDark' ? ' · segue Acento escuro' : (signatureStyle(colors) === 'soft' ? ' · tom suave sugerido' : ' · personalizada')));
+    ['light', 'signature', 'dark'].forEach(function (mode) {
+      lines.push('', 'Elementos · aplicação ' + modeLabel(mode));
       ELEMS.forEach(function (g) { g.items.forEach(function (it) { lines.push(g.g.split(' · ')[0] + ' ' + it[1] + ': ' + resolve(it[0], mode).toUpperCase()); }); });
     });
     var text = lines.join('\n'); outEl.value = text;
@@ -880,11 +980,11 @@
     $('sby').hidden = false; $('sby').value = load('wt-by') || '';
     $('beltTitle').textContent = 'Esteira compartilhada';
   }
-  if (Array.isArray(sv)) { saved = sv.filter(function (p) { return p && p.id && p.c; }); }
+  if (Array.isArray(sv)) { saved = sv.filter(function (p) { return p && p.id && p.c; }).map(function (p) { p.c = normalizeColors(p.c); p.s = p.s || {}; p.d = p.d || {}; return p; }); }
   else if (Array.isArray(oldSv)) {
     saved = oldSv.filter(function (p) { return p && p.id && p.c; }).map(function (p) {
       var o = {}; if (p.c.emphasis) o.p3emph = p.c.emphasis;
-      return { id: p.id, name: p.name, tag: 'Salva', saved: true, c: Object.assign({}, PRESETS[0].c, migrate(p.c)), o: o };
+      return { id:p.id, name:p.name, tag:'Salva', saved:true, c:normalizeColors(Object.assign({}, PRESETS[0].c, migrate(p.c))), o:o, s:{}, d:{} };
     });
     store('wt-saved2', saved);
   }
@@ -893,11 +993,11 @@
     if (!st) return;
     var f = all().concat([ORIGINAL]).filter(function (p) { return p.id === st.id; })[0];
     if (!f && st.id === 'imp' && st.imp) { f = st.imp; derived = st.derived || {}; }
-    if (f) { cur = f; colors = Object.assign({}, f.c, st.colors || {}); ov = st.ov || {}; darkOv = st.darkOv || {}; }
+    if (f) { cur = f; colors = normalizeColors(Object.assign({}, f.c, st.colors || {})); ov = st.ov || {}; signatureOv = st.signatureOv || {}; darkOv = st.darkOv || {}; }
   }
   if (st) {
-    viewMode = ['light', 'dark', 'compare'].indexOf(st.view) >= 0 ? st.view : 'light';
-    editMode = ['light', 'dark'].indexOf(st.edit) >= 0 ? st.edit : (viewMode === 'dark' ? 'dark' : 'light');
+    viewMode = ['light', 'signature', 'dark', 'compare'].indexOf(st.view) >= 0 ? st.view : 'light';
+    editMode = ['light', 'signature', 'dark'].indexOf(st.edit) >= 0 ? st.edit : (viewMode === 'dark' ? 'dark' : (viewMode === 'signature' ? 'signature' : 'light'));
     if (viewMode !== 'compare') editMode = viewMode;
     feedMode = st.feed === 'dark' ? 'dark' : 'light';
     favOnly = !!st.favOnly;
