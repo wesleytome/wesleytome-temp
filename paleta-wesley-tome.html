@@ -59,6 +59,13 @@
   .ribbon i.w { flex: 1.6; }
   /* Order badge: floats over the card's top-left corner and is renumbered whenever the belt order changes. */
   .ord { position: absolute; top: -8px; left: -8px; z-index: 2; min-width: 26px; height: 26px; padding: 0 6px; box-sizing: border-box; border-radius: 13px; display: grid; place-items: center; background: var(--fg); color: var(--card); border: 2px solid var(--card); font-size: 12px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+  .fav { all: unset; box-sizing: border-box; position: absolute; z-index: 3; right: 18px; top: 18px; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; color: var(--muted); border: 1px solid var(--line); background: color-mix(in srgb, var(--card) 90%, transparent); backdrop-filter: blur(5px); }
+  .fav svg { width: 15px; height: 15px; }
+  .fav:hover { color: var(--fg); border-color: var(--muted); }
+  .fav.on { color: var(--fg); background: var(--card); border-color: var(--fg); }
+  .fav.on svg { fill: currentColor; }
+  .fav:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .fav-count { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: color-mix(in srgb, currentColor 12%, transparent); font-size: 11px; font-variant-numeric: tabular-nums; }
   .del { all: unset; box-sizing: border-box; position: absolute; right: 10px; bottom: 12px; min-width: 30px; height: 30px; padding: 0 7px; border-radius: 8px; display: grid; place-items: center; cursor: pointer; font-size: 12px; font-weight: 600; line-height: 1; color: var(--muted); border: 1px solid var(--line); background: var(--card); }
   .del svg { width: 15px; height: 15px; }
   .del:hover { color: var(--fg); border-color: var(--muted); }
@@ -219,6 +226,7 @@
     <div class="row">
       <span class="status" id="sync" role="status" style="min-height:0"></span>
       <button class="lnkbtn" type="button" id="unhide" hidden>Restaurar paletas excluídas</button>
+      <button class="btn" type="button" id="favFilter" aria-pressed="false" aria-label="Visualizar somente paletas favoritas">⚑ Favoritos <span class="fav-count" id="favCount">0</span></button>
       <button class="btn" type="button" id="prev" aria-label="Paletas anteriores">‹</button>
       <button class="btn" type="button" id="next" aria-label="Próximas paletas">›</button>
     </div>
@@ -380,7 +388,7 @@
   darkStage.innerHTML = stage.innerHTML;
   darkStage.querySelector('.b').setAttribute('aria-label', 'Peça 2, fundo escuro');
   darkStage.querySelector('.c').setAttribute('aria-label', 'Peça 3, superfície escura');
-  var saved = [], hidden = [], loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, darkOv = {}, derived = {}, baseIn = {}, elemIn = {}, viewMode = 'light', editMode = 'light', feedMode = 'light';
+  var saved = [], hidden = [], favorites = [], favOnly = false, loaded = false, cur = PRESETS[0] || ORIGINAL, colors = Object.assign({}, cur.c), ov = {}, darkOv = {}, derived = {}, baseIn = {}, elemIn = {}, viewMode = 'light', editMode = 'light', feedMode = 'light';
 
   var order = [], dragging = false;
   function all() {
@@ -399,7 +407,7 @@
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function isCustom() { return Object.keys(ov).length > 0 || Object.keys(darkOv).length > 0 || BASE.some(function (b) { return colors[b[0]] !== cur.c[b[0]]; }); }
-  function persist() { store('wt-state2', { id: cur.id, colors: colors, ov: ov, darkOv: darkOv, derived: derived, imp: cur.id === 'imp' ? cur : null, open: dock.getAttribute('data-open') === 'true', view: viewMode, edit: editMode, feed: feedMode }); }
+  function persist() { store('wt-state2', { id: cur.id, colors: colors, ov: ov, darkOv: darkOv, derived: derived, imp: cur.id === 'imp' ? cur : null, open: dock.getAttribute('data-open') === 'true', view: viewMode, edit: editMode, feed: feedMode, favOnly: favOnly }); }
   function migrate(c) {
     if (!c || c.base === undefined) return c;
     return { dark: c.base, mid: c.mid || c.surface, light: c.paper, deep: c.ink, neutralLight: c.mutedDark, neutralDark: c.mutedLight, accent: c.accent, accentDark: c.accentLight };
@@ -445,7 +453,12 @@
   }
   var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
   var GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
-  function numberBelt() { slots().forEach(function (x, i) { var o = x.querySelector('.ord'); if (o) o.textContent = i + 1; }); }
+  var FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4m0 1h10l-1.5 3L15 11H5"/></svg>';
+  function isFavorite(id) { return favorites.indexOf(id) >= 0; }
+  function numberBelt() {
+    var ids = all().map(function (p) { return p.id; });
+    slots().forEach(function (x, i) { var o = x.querySelector('.ord'); if (o) o.textContent = favOnly ? ids.indexOf(x.dataset.id) + 1 : i + 1; });
+  }
   function slots() { return Array.prototype.slice.call(belt.querySelectorAll('.pw')); }
   // The dragged card follows the pointer; neighbors slide (FLIP) as it crosses their midpoints.
   function startDrag(e, w) {
@@ -495,9 +508,9 @@
   }
   function renderBelt() {
     belt.innerHTML = '';
-    var list = all();
+    var full = all(), list = favOnly ? full.filter(function (p) { return isFavorite(p.id); }) : full;
     if (!list.length) {
-      belt.innerHTML = SHARED && !loaded ? '<div class="empty" role="listitem">Carregando paletas…</div>' : '<div class="empty" role="listitem"><b>Nenhuma paleta na esteira ainda.</b>Ajuste as cores no painel e use "Salvar na esteira". Quem abrir este link vê as mesmas paletas.</div>';
+      belt.innerHTML = SHARED && !loaded ? '<div class="empty" role="listitem">Carregando paletas…</div>' : (favOnly ? '<div class="empty" role="listitem"><b>Nenhuma paleta favorita.</b>Use a bandeira nos cards para guardar suas favoritas neste navegador.</div>' : '<div class="empty" role="listitem"><b>Nenhuma paleta na esteira ainda.</b>Ajuste as cores no painel e use "Salvar na esteira". Quem abrir este link vê as mesmas paletas.</div>');
     }
     list.forEach(function (p) {
       var w = document.createElement('div'); w.className = 'pw'; w.setAttribute('role', 'listitem');
@@ -505,6 +518,15 @@
       b.innerHTML = cardHTML(p);
       b.addEventListener('click', function () { choose(p); });
       w.appendChild(b);
+      var f = document.createElement('button'); f.type = 'button'; f.className = 'fav' + (isFavorite(p.id) ? ' on' : ''); f.innerHTML = FLAG;
+      f.setAttribute('aria-pressed', isFavorite(p.id) ? 'true' : 'false');
+      f.setAttribute('aria-label', (isFavorite(p.id) ? 'Remover ' : 'Adicionar ') + p.name + (isFavorite(p.id) ? ' dos favoritos' : ' aos favoritos'));
+      f.title = isFavorite(p.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+      f.addEventListener('click', function () {
+        if (isFavorite(p.id)) favorites = favorites.filter(function (id) { return id !== p.id; }); else favorites.push(p.id);
+        store('wt-favorites', favorites); renderBelt(); persist();
+      });
+      w.appendChild(f);
       var d = document.createElement('button'); d.type = 'button'; d.className = 'del'; d.innerHTML = TRASH; d.setAttribute('aria-label', 'Excluir ' + p.name); d.title = 'Excluir';
       var timer;
       // Two clicks: the first arms the button, the second deletes.
@@ -517,7 +539,7 @@
         clearTimeout(timer); removePalette(p);
       });
       w.appendChild(d);
-      var g = document.createElement('button'); g.type = 'button'; g.className = 'grip'; g.innerHTML = GRIP; g.title = 'Arraste para reordenar';
+      var g = document.createElement('button'); g.type = 'button'; g.className = 'grip'; g.innerHTML = GRIP; g.title = 'Arraste para reordenar'; g.hidden = favOnly;
       g.setAttribute('aria-label', 'Reordenar ' + p.name + ' (setas esquerda e direita)');
       g.addEventListener('pointerdown', function (e) { startDrag(e, w); });
       g.addEventListener('keydown', function (e) {
@@ -533,6 +555,8 @@
     });
     numberBelt();
     $('unhide').hidden = !hidden.length;
+    $('favCount').textContent = full.filter(function (p) { return isFavorite(p.id); }).length;
+    $('favFilter').setAttribute('aria-pressed', favOnly ? 'true' : 'false');
   }
   var crow = [];
   function renderContrast() {
@@ -609,6 +633,7 @@
   function removePalette(p) {
     function done() {
       saved = saved.filter(function (x) { return x.id !== p.id; });
+      favorites = favorites.filter(function (id) { return id !== p.id; }); store('wt-favorites', favorites);
       if (cur.id === p.id) { cur = fallback(); colors = Object.assign({}, cur.c); ov = {}; darkOv = {}; derived = {}; }
       renderBelt(); apply(); statusEl.textContent = '"' + p.name + '" excluída.';
     }
@@ -830,6 +855,7 @@
   });
   $('prev').addEventListener('click', function () { belt.scrollBy({ left: -360, behavior: 'smooth' }); });
   $('next').addEventListener('click', function () { belt.scrollBy({ left: 360, behavior: 'smooth' }); });
+  $('favFilter').addEventListener('click', function () { favOnly = !favOnly; renderBelt(); persist(); });
 
   function placeDock() {
     var isOpen = dock.getAttribute('data-open') === 'true';
@@ -848,6 +874,7 @@
   $('unhide').addEventListener('click', function () { hidden = []; store('wt-hidden', hidden); renderBelt(); apply(); });
   var sv = SHARED ? null : load('wt-saved2'), oldSv = SHARED ? null : load('wt-saved');
   hidden = SHARED ? [] : (load('wt-hidden') || []);
+  favorites = (load('wt-favorites') || []).filter(function (id) { return typeof id === 'string'; });
   order = SHARED ? [] : (load('wt-order') || []);
   if (SHARED) {
     $('sby').hidden = false; $('sby').value = load('wt-by') || '';
@@ -873,6 +900,7 @@
     editMode = ['light', 'dark'].indexOf(st.edit) >= 0 ? st.edit : (viewMode === 'dark' ? 'dark' : 'light');
     if (viewMode !== 'compare') editMode = viewMode;
     feedMode = st.feed === 'dark' ? 'dark' : 'light';
+    favOnly = !!st.favOnly;
   }
   if (st && st.open === false) open = false;
   if (window.innerWidth < 1100) open = false;
