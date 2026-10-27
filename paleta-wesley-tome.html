@@ -488,8 +488,13 @@
     return (p.o && p.o[k]) || role(p.c, k, mode);
   }
   function cardHTML(p) {
+    // The selected card previews live edits; the other palette cards remain unchanged.
+    var shown = p.id === cur.id ? Object.assign({}, p, {
+      c: Object.assign({}, p.c, colors),
+      o: merged(), s: mergedSignature(), d: mergedDark()
+    }) : p;
     var mode = viewMode === 'compare' ? editMode : viewMode;
-    var e = function (k) { return pick(p, k, mode); };
+    var e = function (k) { return pick(shown, k, mode); };
     var t1 = '<span class="th" style="background:' + e('o1bg') + ';color:' + e('o1ink') + '">' +
       '<span class="tw" style="background:' + e('o1win') + ';--a:' + e('o1accent') + ';--t:' + e('o1wintext') + '"></span>' +
       '<span class="tf"></span><span class="tg" style="background:' + e('o1ink') + '"></span>' +
@@ -503,9 +508,10 @@
       '<span class="tl" style="top:58%;width:74%;background:' + e('p3body') + ';opacity:.7"></span><span class="tl" style="top:66%;width:34%;background:' + e('p3emph') + '"></span></span>';
     var rib = '<span class="ribbon">' + RIBBON.map(function (k) {
       var lab = BASE.filter(function (b) { return b[0] === k; })[0][1];
-      return '<i' + (WIDE[k] ? ' class="w"' : '') + ' style="background:' + p.c[k] + '" title="' + lab + ' ' + p.c[k] + '"></i>';
+      return '<i' + (WIDE[k] ? ' class="w"' : '') + ' style="background:' + shown.c[k] + '" title="' + lab + ' ' + shown.c[k] + '"></i>';
     }).join('') + '</span>';
-    return '<span class="thumbs" aria-hidden="true">' + t1 + t2 + t3 + '</span>' + rib + '<b>' + esc(p.name) + '</b><span class="tag">' + esc(p.tag) + '</span>';
+    var tag = p.id === cur.id && isCustom() ? 'Prévia · ajustada' : p.tag;
+    return '<span class="thumbs" aria-hidden="true">' + t1 + t2 + t3 + '</span>' + rib + '<b>' + esc(p.name) + '</b><span class="tag">' + esc(tag) + '</span>';
   }
   var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
   var GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
@@ -696,7 +702,7 @@
     stage.setAttribute('data-feed', feedMode); signatureStage.setAttribute('data-feed', feedMode); darkStage.setAttribute('data-feed', feedMode);
     Array.prototype.forEach.call(belt.querySelectorAll('.pcard'), function (b) { b.setAttribute('aria-pressed', b.dataset.id === cur.id ? 'true' : 'false'); });
     $('update').hidden = !cur.saved;
-    renderContrast(); renderRecipe(); renderDiagnostics(); persist();
+    renderContrast(); renderRecipe(); renderDiagnostics(); updateThumbnails(); persist();
   }
   function choose(p) { cur = p; colors = normalizeColors(p.c); ov = {}; signatureOv = {}; darkOv = {}; derived = {}; statusEl.textContent = ''; outEl.hidden = true; apply(); }
   function merged() { return Object.assign({}, cur.o || {}, ov); }
@@ -942,11 +948,11 @@
     b.addEventListener('click', function () {
       viewMode = b.dataset.view;
       if (viewMode !== 'compare') editMode = viewMode;
-      apply(); updateThumbnails();
+      apply();
     });
   });
   Array.prototype.forEach.call(document.querySelectorAll('[data-edit]'), function (b) {
-    b.addEventListener('click', function () { editMode = b.dataset.edit; apply(); updateThumbnails(); });
+    b.addEventListener('click', function () { editMode = b.dataset.edit; apply(); });
   });
   Array.prototype.forEach.call(document.querySelectorAll('[data-feed]'), function (b) {
     b.addEventListener('click', function () {
