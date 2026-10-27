@@ -41,6 +41,7 @@ function clean(body, id) {
     id,
     name: String(body.name || 'Sem nome').slice(0, 40),
     by: String(body.by || '').slice(0, 30),
+    favorite: body.favorite === true,
     c,
     o: hexes(body.o),
     s: hexes(body.s),

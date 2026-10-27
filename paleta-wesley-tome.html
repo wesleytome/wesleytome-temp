@@ -240,7 +240,7 @@
     <div class="row">
       <span class="status" id="sync" role="status" style="min-height:0"></span>
       <button class="lnkbtn" type="button" id="unhide" hidden>Restaurar paletas excluídas</button>
-      <button class="btn" type="button" id="favFilter" aria-pressed="false" aria-label="Visualizar somente paletas favoritas">⚑ Favoritos <span class="fav-count" id="favCount">0</span></button>
+      <button class="btn" type="button" id="favFilter" aria-pressed="false" aria-label="Visualizar somente paletas em destaque">⚑ Destaques <span class="fav-count" id="favCount">0</span></button>
       <button class="btn" type="button" id="prev" aria-label="Paletas anteriores">‹</button>
       <button class="btn" type="button" id="next" aria-label="Próximas paletas">›</button>
     </div>
@@ -410,7 +410,7 @@
     colors.signature = c[8] || colors.accentDark;
     return { id:id, name:name, tag:tag, c:colors, o:Object.assign({ p3emph:emph }, o || {}) };
   }
-  var ORIGINAL = P('original', 'Papel + laranja', 'Card original', ['#3B383B', '#BDB2A6', '#ECE4DB', '#2D2E29', '#6D6D6F', '#6A625A', '#DC7145', '#A84E25'], '#6E2F12', { o1emph: '#DC7145', o1wintext: '#EEEBEE' });
+  var ORIGINAL = P('original', 'Charcoal Blue + Pearl', 'Da referência', ['#202833', '#B9AF99', '#EAE0C8', '#161D27', '#C9C0AA', '#5C625E', '#B8A77D', '#6C634A'], '#6C634A', { o1emph: '#6C634A', o1wintext: '#EAE0C8' });
   /* Shared mode (the deployed site): the belt lives on the server and starts empty. Local mode (localhost or file): presets + this browser's saves. */
   var SHARED = (/^https?:$/.test(location.protocol) && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) || /[?&]compartilhado\b/.test(location.search);
   var API = '/api/palettes';
@@ -446,7 +446,7 @@
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
   }
   function normalizeColors(c) { var out = Object.assign({}, ORIGINAL.c, c || {}); if (!c || !c.signature) out.signature = out.accentDark; return out; }
-  function fromServer(p) { return { id:p.id, name:p.name, by:p.by, tag:p.by ? 'por ' + p.by : 'Salva', saved:true, c:normalizeColors(p.c), o:p.o || {}, s:p.s || {}, d:p.d || {}, at:p.at }; }
+  function fromServer(p) { return { id:p.id, name:p.name, by:p.by, tag:p.by ? 'por ' + p.by : 'Salva', saved:true, favorite:!!p.favorite, c:normalizeColors(p.c), o:p.o || {}, s:p.s || {}, d:p.d || {}, at:p.at }; }
   function setSync(t) { $('sync').textContent = t; }
   function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function load(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -516,7 +516,30 @@
   var TRASH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>';
   var GRIP = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
   var FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4m0 1h10l-1.5 3L15 11H5"/></svg>';
-  function isFavorite(id) { return favorites.indexOf(id) >= 0; }
+  function isFavorite(p) { return !!p.favorite || (!SHARED && favorites.indexOf(p.id) >= 0); }
+  function palettePayload(p, favorite) { return { name:p.name, by:p.by, c:p.c, o:p.o || {}, s:p.s || {}, d:p.d || {}, favorite:favorite }; }
+  function setFavorite(p, favorite) {
+    var before = !!p.favorite;
+    p.favorite = favorite;
+    if (!SHARED) { store('wt-saved2', saved); renderBelt(); persist(); return; }
+    renderBelt(); persist();
+    api('PUT', p.id, palettePayload(p, favorite)).then(function (savedPalette) {
+      Object.assign(p, fromServer(savedPalette)); renderBelt();
+    }, function () {
+      p.favorite = before; renderBelt(); statusEl.textContent = 'Não consegui atualizar o destaque. Tente de novo.';
+    });
+  }
+  function migrateLocalFavorites() {
+    if (!SHARED || load('wt-shared-favorites-v1')) return;
+    var legacy = saved.filter(function (p) { return favorites.indexOf(p.id) >= 0 && !p.favorite; });
+    if (!legacy.length) { store('wt-shared-favorites-v1', true); return; }
+    legacy.forEach(function (p) { p.favorite = true; });
+    Promise.all(legacy.map(function (p) { return api('PUT', p.id, palettePayload(p, true)); })).then(function () {
+      store('wt-shared-favorites-v1', true); refresh();
+    }, function () {
+      legacy.forEach(function (p) { p.favorite = false; }); renderBelt();
+    });
+  }
   function numberBelt() {
     var ids = all().map(function (p) { return p.id; });
     slots().forEach(function (x, i) { var o = x.querySelector('.ord'); if (o) o.textContent = favOnly ? ids.indexOf(x.dataset.id) + 1 : i + 1; });
@@ -570,9 +593,9 @@
   }
   function renderBelt() {
     belt.innerHTML = '';
-    var full = all(), list = favOnly ? full.filter(function (p) { return isFavorite(p.id); }) : full;
+    var full = all(), list = favOnly ? full.filter(function (p) { return isFavorite(p); }) : full;
     if (!list.length) {
-      belt.innerHTML = SHARED && !loaded ? '<div class="empty" role="listitem">Carregando paletas…</div>' : (favOnly ? '<div class="empty" role="listitem"><b>Nenhuma paleta favorita.</b>Use a bandeira nos cards para guardar suas favoritas neste navegador.</div>' : '<div class="empty" role="listitem"><b>Nenhuma paleta na esteira ainda.</b>Ajuste as cores no painel e use "Salvar na esteira". Quem abrir este link vê as mesmas paletas.</div>');
+      belt.innerHTML = SHARED && !loaded ? '<div class="empty" role="listitem">Carregando paletas…</div>' : (favOnly ? '<div class="empty" role="listitem"><b>Nenhuma paleta em destaque.</b>Use a bandeira em um card para destacar essa seleção para todos.</div>' : '<div class="empty" role="listitem"><b>Nenhuma paleta na esteira ainda.</b>Ajuste as cores no painel e use "Salvar na esteira". Quem abrir este link vê as mesmas paletas.</div>');
     }
     list.forEach(function (p) {
       var w = document.createElement('div'); w.className = 'pw'; w.setAttribute('role', 'listitem');
@@ -580,13 +603,12 @@
       b.innerHTML = cardHTML(p);
       b.addEventListener('click', function () { choose(p); });
       w.appendChild(b);
-      var f = document.createElement('button'); f.type = 'button'; f.className = 'fav' + (isFavorite(p.id) ? ' on' : ''); f.innerHTML = FLAG;
-      f.setAttribute('aria-pressed', isFavorite(p.id) ? 'true' : 'false');
-      f.setAttribute('aria-label', (isFavorite(p.id) ? 'Remover ' : 'Adicionar ') + p.name + (isFavorite(p.id) ? ' dos favoritos' : ' aos favoritos'));
-      f.title = isFavorite(p.id) ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+      var f = document.createElement('button'); f.type = 'button'; f.className = 'fav' + (isFavorite(p) ? ' on' : ''); f.innerHTML = FLAG;
+      f.setAttribute('aria-pressed', isFavorite(p) ? 'true' : 'false');
+      f.setAttribute('aria-label', (isFavorite(p) ? 'Remover ' : 'Adicionar ') + p.name + (isFavorite(p) ? ' dos destaques' : ' aos destaques'));
+      f.title = isFavorite(p) ? 'Remover dos destaques' : 'Adicionar aos destaques';
       f.addEventListener('click', function () {
-        if (isFavorite(p.id)) favorites = favorites.filter(function (id) { return id !== p.id; }); else favorites.push(p.id);
-        store('wt-favorites', favorites); renderBelt(); persist();
+        setFavorite(p, !isFavorite(p));
       });
       w.appendChild(f);
       var d = document.createElement('button'); d.type = 'button'; d.className = 'del'; d.innerHTML = TRASH; d.setAttribute('aria-label', 'Excluir ' + p.name); d.title = 'Excluir';
@@ -617,7 +639,7 @@
     });
     numberBelt();
     $('unhide').hidden = !hidden.length;
-    $('favCount').textContent = full.filter(function (p) { return isFavorite(p.id); }).length;
+    $('favCount').textContent = full.filter(function (p) { return isFavorite(p); }).length;
     $('favFilter').setAttribute('aria-pressed', favOnly ? 'true' : 'false');
   }
   var crow = [];
@@ -710,7 +732,7 @@
   function mergedDark() { return Object.assign({}, cur.d || {}, darkOv); }
   function saveNew() {
     var n = snameEl.value.trim() || ('Paleta ' + (saved.length + 1)), by = $('sby').value.trim();
-    var p = { id:'s' + Date.now(), name:n, tag:'Salva', saved:true, c:Object.assign({}, colors), o:merged(), s:mergedSignature(), d:mergedDark() };
+    var p = { id:'s' + Date.now(), name:n, tag:'Salva', saved:true, favorite:false, c:Object.assign({}, colors), o:merged(), s:mergedSignature(), d:mergedDark() };
     function done(q) {
       saved.push(q); cur = q; ov = {}; signatureOv = {}; darkOv = {}; derived = {}; snameEl.value = '';
       renderBelt(); apply(); statusEl.textContent = 'Salva na esteira como "' + n + '".';
@@ -718,7 +740,7 @@
     }
     if (!SHARED) { done(p); store('wt-saved2', saved); return; }
     store('wt-by', by); statusEl.textContent = 'Salvando…';
-    api('POST', '', { name:n, by:by, c:p.c, o:p.o, s:p.s, d:p.d }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
+    api('POST', '', { name:n, by:by, c:p.c, o:p.o, s:p.s, d:p.d, favorite:false }).then(function (r) { done(fromServer(r)); }, function () { statusEl.textContent = 'Não consegui salvar. Tente de novo.'; });
   }
   function updateCur() {
     if (!cur.saved) return;
@@ -726,7 +748,7 @@
     function done() { p.o = o; p.s = s; p.d = d; p.c = c; ov = {}; signatureOv = {}; darkOv = {}; renderBelt(); apply(); statusEl.textContent = 'Paleta atualizada.'; }
     if (!SHARED) { done(); store('wt-saved2', saved); return; }
     statusEl.textContent = 'Salvando…';
-    api('PUT', p.id, { name:p.name, by:p.by, c:c, o:o, s:s, d:d }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
+    api('PUT', p.id, { name:p.name, by:p.by, c:c, o:o, s:s, d:d, favorite:!!p.favorite }).then(done, function () { statusEl.textContent = 'Não consegui atualizar. Tente de novo.'; });
   }
   function removePalette(p) {
     function done() {
@@ -744,6 +766,7 @@
     setSync('Sincronizando…');
     return api('GET').then(function (list) {
       saved = list.map(fromServer); loaded = true; setSync('');
+      migrateLocalFavorites();
       var c = saved.filter(function (p) { return p.id === cur.id; })[0];
       if (c) cur = c;
       renderBelt(); apply();
@@ -986,11 +1009,11 @@
     $('sby').hidden = false; $('sby').value = load('wt-by') || '';
     $('beltTitle').textContent = 'Esteira compartilhada';
   }
-  if (Array.isArray(sv)) { saved = sv.filter(function (p) { return p && p.id && p.c; }).map(function (p) { p.c = normalizeColors(p.c); p.s = p.s || {}; p.d = p.d || {}; return p; }); }
+  if (Array.isArray(sv)) { saved = sv.filter(function (p) { return p && p.id && p.c; }).map(function (p) { p.c = normalizeColors(p.c); p.s = p.s || {}; p.d = p.d || {}; p.favorite = !!p.favorite || favorites.indexOf(p.id) >= 0; return p; }); }
   else if (Array.isArray(oldSv)) {
     saved = oldSv.filter(function (p) { return p && p.id && p.c; }).map(function (p) {
       var o = {}; if (p.c.emphasis) o.p3emph = p.c.emphasis;
-      return { id:p.id, name:p.name, tag:'Salva', saved:true, c:normalizeColors(Object.assign({}, PRESETS[0].c, migrate(p.c))), o:o, s:{}, d:{} };
+      return { id:p.id, name:p.name, tag:'Salva', saved:true, favorite:favorites.indexOf(p.id) >= 0, c:normalizeColors(Object.assign({}, PRESETS[0].c, migrate(p.c))), o:o, s:{}, d:{} };
     });
     store('wt-saved2', saved);
   }
